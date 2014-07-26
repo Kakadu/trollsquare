@@ -82,6 +82,21 @@ module JQ = struct
     let res = Ops.call_method parent "append" (build_args args) in
     extract_t res
 
+  let hide obj =
+    let args = alloc_args 0 in
+    let res = Ops.call_method obj "hide" (build_args args) in
+    extract_t res
+
+  let show obj =
+    let args = alloc_args 0 in
+    let res = Ops.call_method obj "show" (build_args args) in
+    extract_t res
+
+  module Sel = struct
+    let show s = show @@ jQelt (Js.string s)
+    let hide s = hide @@ jQelt (Js.string s)
+  end
+
 end
 
 }}

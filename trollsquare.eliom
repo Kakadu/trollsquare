@@ -49,6 +49,31 @@ let get_last_event_rpc
 {client{
 
 open Eliom_content.Html5
+
+type mode = Mode1 | Mode2 | Mode3
+
+let switch_mode_event, switch_mode = React.E.create ()
+
+let _onModeChanged =
+  let toggleMode1 on =
+    List.iter (if on then JQ.Sel.show else JQ.Sel.hide) [".main-center-view"; ".main-right"]
+  in
+  let toggleMode2 on =
+    List.iter (if on then JQ.Sel.show else JQ.Sel.hide) []
+  in
+  let toggleMode3 on =
+    List.iter (if on then JQ.Sel.show else JQ.Sel.hide) []
+  in
+
+  let f = function
+    | Mode1 -> firelog "mode1"; toggleMode1 true;  toggleMode2 false; toggleMode3 false
+    | Mode2 -> firelog "mode2"; toggleMode1 false; toggleMode2 true;  toggleMode3 false
+    | Mode3 -> firelog "mode3"; toggleMode1 false; toggleMode2 false; toggleMode3 true
+  in
+  React.E.map f switch_mode_event
+
+
+
 (*
 let split s =
     let len = String.length s in
@@ -88,11 +113,6 @@ let make_node_for_event e =
   li ~a:[a_class ["event-list-item"]]
     [ div ~a:[a_class ["event-list-item-title"]] [pcdata @@ Js.to_string e##title]
     ; div ~a:[a_class ["event-list-item-time"]] [pcdata ts]
-    (*
-    R.p html_value_signal;
-    D.p ~a:[ R.a_style (React.S.map make_color value_len)]
-      [R.pcdata value_signal];
-    R.node content_signal *)
   ]
 
 
@@ -109,12 +129,14 @@ let main_handler () () =
   in
 
   let left_area =
-
-    let mode1_clicked = {Dom_html.mouseEvent Js.t->unit{ fun _ -> () }} in
+    let mode1_clicked = {Dom_html.mouseEvent Js.t->unit{ fun _ -> switch_mode Mode1 }} in
+    let mode2_clicked = {Dom_html.mouseEvent Js.t->unit{ fun _ -> switch_mode Mode2 }} in
+    let mode3_clicked = {Dom_html.mouseEvent Js.t->unit{ fun _ -> switch_mode Mode3 }} in
     div ~a:[a_class ["main-left-bar"]]
         [ div ~a:[a_class ["main-chat-area"]] [pcdata "chat"]
         ; div ~a:[a_class ["main-aux-buttons-area"]]
-              [ input ~a:[a_class ["aux-button-radio"]; a_id "aux-button-mode1"; a_name "aux-buttons"]
+              [ input ~a:[a_class ["aux-button-radio"]; a_id "aux-button-mode1"; a_name "aux-buttons"
+                         ; Unsafe.string_attrib "checked" "" ]
                       ~input_type:`Radio ()
               ; Unsafe.node "label" ~a:[ Unsafe.string_attrib "for" "aux-button-mode1"
                                        ; a_class ["aux-button-label"]
@@ -124,14 +146,13 @@ let main_handler () () =
                       ~input_type:`Radio ()
               ; Unsafe.node "label" ~a:[ Unsafe.string_attrib "for" "aux-button-mode2"
                                        ; a_class ["aux-button-label"]
-                                       ; a_onclick mode1_clicked] [pcdata "Mode 2"]
+                                       ; a_onclick mode2_clicked] [pcdata "Mode 2"]
               ; input ~a:[ a_class ["aux-button-radio"]; a_id "aux-button-mode3"
-                         ; a_name "aux-buttons"
-                         ; Unsafe.string_attrib "checked" "" ]
+                         ; a_name "aux-buttons" ]
                       ~input_type:`Radio ()
               ; Unsafe.node "label" ~a:[ Unsafe.string_attrib "for" "aux-button-mode3"
                                        ; a_class ["aux-button-label"]
-                                       ; a_onclick mode1_clicked] [pcdata "Mode 3"]
+                                       ; a_onclick mode3_clicked] [pcdata "Mode 3"]
               ; Unsafe.node "a" []
               ]
         ]
