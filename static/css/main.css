@@ -1,0 +1,91 @@
+body {
+  font-family: 'Ubuntu', 'Monospace', 'Inconsolata';
+  font-size:  20px;
+  font-weight: 200;
+  text-rendering: optimizelegibility;
+  color: rgb(0,0,0);
+}
+
+.main-heading {
+  position: fixed;
+  height:   30px;
+  width: 100%;
+  left:  0px;
+  top:   0px;
+
+  background: -webkit-linear-gradient(-45deg, #d5cea6 0%,#c9c190 50%);
+}
+
+.main-left-bar {
+  position: fixed;
+  left: 0px;
+  top: 30px;
+  width:  200px;
+  height: 100%;
+  //padding-top: 30px;
+  //background: -webkit-gradient(linear, left top, right bottom, color-stop(0%,#a9db80), color-stop(100%,#96c56f)); /* Chrome,Safari4+ */
+
+}
+
+.main-chat-area {
+  position: relative;
+  width:   100%;
+  height: 200px;
+  background-color: #ccffff;
+}
+
+.main-aux-buttons-area {
+  background-color: #c1e1a6;
+  height: 100%;
+  width: 100%;
+}
+
+.main-events-list {
+  //position: relative;
+  top: 200px; left: 0px;
+  width:   100%;
+  height:  100%;
+  background-color: #ccff66;
+}
+
+.main-center-view {
+  position: fixed;
+  width:    800px;
+  height:    100%;
+  top:        0px;
+  left:     200px;
+  margin-left: 0px;
+  margin-top: 30px;
+
+}
+.main-event-view {
+  width: 100%;
+  height: 60%;
+  /*
+  position: fixed;
+  width:    800px;
+  height:    100%;
+  top:        0px;
+  left:     200px;
+  margin-left: 0px;
+  margin-top: 30px; */
+  background-color: #FFccFF;
+}
+
+.main-right {
+  position: fixed;
+  width:   166px;
+  right:     0px;
+  height: 100%;
+  top:     0px;
+  margin-top: 30px;
+  background-color: #ccffff;
+}
+
+.main-initdb-btn {
+  right: 0px;
+  position: absolute;
+}
+
+
+

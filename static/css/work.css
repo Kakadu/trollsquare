@@ -1,0 +1,35 @@
+
+
+	.main-events-list .ui-selecting { background: #FECA40; }
+	.main-events-list .ui-selected { background: #F39814; color: white; }
+//	.main-events-list { list-style-type: none; margin: 0; padding: 0; }
+	.main-events-list li { overflow: hidden; height: 30px; }
+
+.event-list-item-title {
+  margin-right: 150px;
+  //display: inline-block;
+}
+.event-list-item-time {
+  top: 0px; right: 0px;
+  width: 100px;
+  display: inline-block;
+}
+
+.main-aux-buttons-area input[type="radio"] {
+  display: none;
+}
+.aux-button-label {
+    display:block;
+    background-color:#ddd;
+    padding:4px 11px;
+    font-family:Arial;
+    font-size:16px;
+}
+.main-aux-buttons-area input[type="radio"] + label {
+    margin: 4px 0px 4px 0px;
+    display: block;
+    text-align: center;
+}
+.main-aux-buttons-area input[type="radio"]:checked + label {
+    background-color:#bbb;
+}

@@ -1,0 +1,68 @@
+_server/Jstypes.cmo :
+_server/Jstypes.cmx :
+_server/Jstypes.cmo : _server/Jstypes.type_mli
+_server/Jstypes.cmx : _server/Jstypes.type_mli
+_server/types.cmo :
+_server/types.cmx :
+_server/types.cmo : _server/types.type_mli
+_server/types.cmx : _server/types.type_mli
+_server/neorest.cmo : _server/result.cmo _server/helpers.cmo
+_server/neorest.cmx : _server/result.cmx _server/helpers.cmx
+_server/neorest.type_mli : _server/result.cmo _server/helpers.cmo
+_server/neorest.cmo : _server/neorest.type_mli
+_server/neorest.cmx : _server/neorest.type_mli
+_server/helpers.cmo : _server/result.cmo
+_server/helpers.cmx : _server/result.cmx
+_server/helpers.type_mli : _server/result.cmo
+_server/helpers.cmo : _server/helpers.type_mli
+_server/helpers.cmx : _server/helpers.type_mli
+_server/result.cmo :
+_server/result.cmx :
+_server/result.cmo : _server/result.type_mli
+_server/result.cmx : _server/result.type_mli
+_server/trollsquare.cmo : _server/types.cmo _server/helpers.cmo _server/db.cmo
+_server/trollsquare.cmx : _server/types.cmx _server/helpers.cmx _server/db.cmx
+_server/trollsquare.type_mli : _server/types.cmo _server/helpers.cmo _server/db.cmo
+_server/trollsquare.cmo : _server/trollsquare.type_mli
+_server/trollsquare.cmx : _server/trollsquare.type_mli
+_server/helpers_client.cmo :
+_server/helpers_client.cmx :
+_server/helpers_client.cmo : _server/helpers_client.type_mli
+_server/helpers_client.cmx : _server/helpers_client.type_mli
+_server/db.cmo : _server/types.cmo _server/result.cmo _server/neorest.cmo _server/helpers.cmo
+_server/db.cmx : _server/types.cmx _server/result.cmx _server/neorest.cmx _server/helpers.cmx
+_server/db.type_mli : _server/types.cmo _server/result.cmo _server/neorest.cmo _server/helpers.cmo
+_server/db.cmo : _server/db.type_mli
+_server/db.cmx : _server/db.type_mli
+_client/Jstypes.cmo :
+_client/Jstypes.cmx :
+_client/Jstypes.cmo : _server/Jstypes.type_mli
+_client/Jstypes.cmx : _server/Jstypes.type_mli
+_client/types.cmo :
+_client/types.cmx :
+_client/types.cmo : _server/types.type_mli
+_client/types.cmx : _server/types.type_mli
+_client/neorest.cmo :
+_client/neorest.cmx :
+_client/neorest.cmo : _server/neorest.type_mli
+_client/neorest.cmx : _server/neorest.type_mli
+_client/helpers.cmo :
+_client/helpers.cmx :
+_client/helpers.cmo : _server/helpers.type_mli
+_client/helpers.cmx : _server/helpers.type_mli
+_client/result.cmo :
+_client/result.cmx :
+_client/result.cmo : _server/result.type_mli
+_client/result.cmx : _server/result.type_mli
+_client/trollsquare.cmo : _client/Jstypes.cmo _client/helpers_client.cmo
+_client/trollsquare.cmx : _client/Jstypes.cmx _client/helpers_client.cmx
+_client/trollsquare.cmo : _server/trollsquare.type_mli
+_client/trollsquare.cmx : _server/trollsquare.type_mli
+_client/helpers_client.cmo :
+_client/helpers_client.cmx :
+_client/helpers_client.cmo : _server/helpers_client.type_mli
+_client/helpers_client.cmx : _server/helpers_client.type_mli
+_client/db.cmo :
+_client/db.cmx :
+_client/db.cmo : _server/db.type_mli
+_client/db.cmx : _server/db.type_mli
