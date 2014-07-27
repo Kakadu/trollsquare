@@ -50,16 +50,23 @@ let get_last_event_rpc
 
 open Eliom_content.Html5
 
-type mode = Mode1 | Mode2 | Mode3
+type mode =
+  | Mode1 (* тупой режим *)
+  | Mode2 (* красивый*)
+  | Mode3 (* режим TODO *)
 
+(* http://www.jqwidgets.com/jquery-ui-splitter/
+   http://www.melonhtml5.com/demo/timeline/
+*)
 let switch_mode_event, switch_mode = React.E.create ()
 
 let _onModeChanged =
   let toggleMode1 on =
-    List.iter (if on then JQ.Sel.show else JQ.Sel.hide) [".main-center-view"; ".main-right"]
+    List.iter (if on then JQ.Sel.show else JQ.Sel.hide) [".main-event-view"; ".main-events-list"; ".main-right"]
   in
   let toggleMode2 on =
-    List.iter (if on then JQ.Sel.show else JQ.Sel.hide) []
+    if on then (TLView.show(); TLView.refresh ())
+    else begin TLView.clear(); TLView.hide () end
   in
   let toggleMode3 on =
     List.iter (if on then JQ.Sel.show else JQ.Sel.hide) []
@@ -67,7 +74,9 @@ let _onModeChanged =
 
   let f = function
     | Mode1 -> firelog "mode1"; toggleMode1 true;  toggleMode2 false; toggleMode3 false
-    | Mode2 -> firelog "mode2"; toggleMode1 false; toggleMode2 true;  toggleMode3 false
+    | Mode2 -> begin
+               firelog "mode2"; toggleMode1 false; toggleMode2 true;  toggleMode3 false
+             end
     | Mode3 -> firelog "mode3"; toggleMode1 false; toggleMode2 false; toggleMode3 true
   in
   React.E.map f switch_mode_event
@@ -169,6 +178,9 @@ let main_handler () () =
     div ~a:[a_class ["main-center-view"]]
         [ div ~a:[a_class ["main-event-view"]] [pcdata "event description"]
         ; events_list_div
+        ; div ~a:[a_class ["main-timeline"; "timeline-dual"]]
+              [ div ~a:[a_class ["spine"]] []
+              ]
         ]
   in
   let right_area =
@@ -201,8 +213,9 @@ let () =
                 ; ["js"; "jquery-ui.1.10.4.js" ]
                 ; ["js"; "jquery.timepicker.min.js" ]
                 ]
-           ~css:[ ["css";"trollsquare.css"]
+           ~css:[ ["css"; "trollsquare.css"]
                 ; ["css"; "main.css"]
+                ; ["css"; "timeline.css"]
                 ; ["css"; "work.css"]
                 ; ["css"; "jquery-ui.css"] ]
            Html5.F.(body ~a:[] xs)

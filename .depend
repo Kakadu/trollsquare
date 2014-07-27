@@ -1,7 +1,16 @@
+_server/lochash.cmo :
+_server/lochash.cmx :
+_server/lochash.cmo : _server/lochash.type_mli
+_server/lochash.cmx : _server/lochash.type_mli
 _server/Jstypes.cmo :
 _server/Jstypes.cmx :
 _server/Jstypes.cmo : _server/Jstypes.type_mli
 _server/Jstypes.cmx : _server/Jstypes.type_mli
+_server/TLView.cmo : _server/types.cmo _server/db.cmo
+_server/TLView.cmx : _server/types.cmx _server/db.cmx
+_server/TLView.type_mli : _server/types.cmo _server/db.cmo
+_server/TLView.cmo : _server/TLView.type_mli
+_server/TLView.cmx : _server/TLView.type_mli
 _server/types.cmo :
 _server/types.cmx :
 _server/types.cmo : _server/types.type_mli
@@ -34,10 +43,18 @@ _server/db.cmx : _server/types.cmx _server/result.cmx _server/neorest.cmx _serve
 _server/db.type_mli : _server/types.cmo _server/result.cmo _server/neorest.cmo _server/helpers.cmo
 _server/db.cmo : _server/db.type_mli
 _server/db.cmx : _server/db.type_mli
+_client/lochash.cmo : _client/helpers_client.cmo
+_client/lochash.cmx : _client/helpers_client.cmx
+_client/lochash.cmo : _server/lochash.type_mli
+_client/lochash.cmx : _server/lochash.type_mli
 _client/Jstypes.cmo :
 _client/Jstypes.cmx :
 _client/Jstypes.cmo : _server/Jstypes.type_mli
 _client/Jstypes.cmx : _server/Jstypes.type_mli
+_client/TLView.cmo : _client/Jstypes.cmo _client/helpers_client.cmo
+_client/TLView.cmx : _client/Jstypes.cmx _client/helpers_client.cmx
+_client/TLView.cmo : _server/TLView.type_mli
+_client/TLView.cmx : _server/TLView.type_mli
 _client/types.cmo :
 _client/types.cmx :
 _client/types.cmo : _server/types.type_mli
@@ -54,8 +71,8 @@ _client/result.cmo :
 _client/result.cmx :
 _client/result.cmo : _server/result.type_mli
 _client/result.cmx : _server/result.type_mli
-_client/trollsquare.cmo : _client/Jstypes.cmo _client/helpers_client.cmo
-_client/trollsquare.cmx : _client/Jstypes.cmx _client/helpers_client.cmx
+_client/trollsquare.cmo : _client/TLView.cmo _client/Jstypes.cmo _client/helpers_client.cmo
+_client/trollsquare.cmx : _client/TLView.cmx _client/Jstypes.cmx _client/helpers_client.cmx
 _client/trollsquare.cmo : _server/trollsquare.type_mli
 _client/trollsquare.cmx : _server/trollsquare.type_mli
 _client/helpers_client.cmo :

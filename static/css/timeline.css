@@ -1,0 +1,98 @@
+div.main-timeline {
+  position: fixed;
+  background-image: url('../img/bgtimeline.png');
+  width:  1000px;
+  height: 100%;
+  overflow-y: scroll;
+}
+
+div.main-timeline div.spine {
+  left: 50%;
+  margin-left: -4px;
+  position: absolute;
+  top: 0px; bottom: 0px; height: 100%;
+  width: 8px;
+  border-radius: 4px;
+  background-color: #cccccc;
+}
+
+div.main-timeline div.timeline-element {
+  position: relative;
+}
+
+div.main-timeline div.timeline-element-left {
+  width:  50%;
+  margin: 10px 0px;
+  float:  left;
+  clear:  left;
+}
+
+div.main-timeline div.timeline-element-left:before {
+  right: 0px;
+  top: 15px;
+}
+div.main-timeline div.timeline-element-left:after {
+  right: 0px;
+  top: 10px;
+  margin-right: -5px;
+}
+
+div.main-timeline div.timeline-element-right {
+  width:  50%;
+  margin: 10px 0px;
+  float:  right;
+  clear:  right;
+}
+
+div.main-timeline div.timeline-element div.timeline-element-box {
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 5px;
+  border-color: gray;
+}
+
+div.main-timeline div.timeline-element-left div.timeline-element-box {
+  margin-right: 30px;
+}
+div.main-timeline div.timeline-element-right div.timeline-element-box {
+  margin-left: 30px;
+}
+
+div.timeline-element-title {
+  position: relative;
+  overflow: hidden;
+  margin: 10px;
+  color: #AAAAAA;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+div.timeline-element-title span.timeline-title-label {
+  position: absolute;
+  left: 0px;
+  right: 100px;
+  overflow: hidden;
+  white-space: nowrap;
+  display: block;
+  text-overflow: ellipsis;
+}
+
+div.timeline-element-box div.timeline-element-more {
+  right: 0px; bottom: 0px;
+  width: 100px;
+  position: relative;
+  padding: 5px;
+  text-align: center;
+  margin: 0px 0px 1px 1px;
+  border-style: solid; border-width: 1px; border-radius: 5px;
+}
+div.timeline-element-box div.timeline-element-more:hover {
+  background-color: yellow;
+}
+div.timeline-element-title span.timeline-title-date {
+  float: right;
+}
+
+div.timeline-element-content {
+  height: 200px;
+}

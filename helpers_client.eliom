@@ -92,6 +92,11 @@ module JQ = struct
     let res = Ops.call_method obj "show" (build_args args) in
     extract_t res
 
+  let clear obj =
+    let args = alloc_args 0 in
+    let res = Ops.call_method obj "clear" (build_args args) in
+    extract_t res
+
   module Sel = struct
     let show s = show @@ jQelt (Js.string s)
     let hide s = hide @@ jQelt (Js.string s)
