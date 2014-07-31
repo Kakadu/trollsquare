@@ -1,12 +1,4 @@
-{server{
-open Printf
-
-let string_of_char = String.make 1
-let failwiths fmt = failwith (sprintf fmt)
-
-module Result = Result
-type ('a,'b) result = ('a,'b) Result.t
-
+{shared{
 module Option = struct
   let map ~f = function Some x -> Some (f x) | None -> None
   let value ~f ~default = function Some x -> f x | None -> default
@@ -16,6 +8,17 @@ module Option = struct
   let is_none = function Some _ -> false | None  -> true
   let iter ~f = function Some x -> f x | None -> ()
 end
+
+}}
+
+{server{
+open Printf
+
+let string_of_char = String.make 1
+let failwiths fmt = failwith (sprintf fmt)
+
+module Result = Result
+type ('a,'b) result = ('a,'b) Result.t
 
 module List = struct
   include ListLabels
@@ -61,6 +64,7 @@ end
 
 module String = struct
   include StringLabels
+
   let split ~on s = Str.(split (regexp @@ string_of_char on) s)
   let split_s ~on s = Str.(split (regexp on) s)
   let rsplit ~by s =

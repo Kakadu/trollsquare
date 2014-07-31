@@ -1,8 +1,27 @@
 {client{
 open Printf
-module ODates = ODate.Make(ODate.MakeImplem(Unix))
 
 let firelog fmt = Firebug.console##log (Js.string @@ sprintf fmt)
+
+module List = ListLabels
+module ODates = ODate.Make(ODate.MakeImplem(Unix))
+
+
+module String = struct
+  include StringLabels
+  let string_after s c =
+    let pos: int = String.index s c in
+    Firebug.console##log (Js.string @@ sprintf "s = %s, pos = %d" s pos);
+    if pos = -1 then s else String.sub s (pos+1) (String.length s - pos - 1)
+
+  let index_opt s c =
+    try Some (index s c)
+    with Not_found -> None
+end
+
+
+
+
 
 let with_element_by_id_exn id ~ok ~bad =
   Js.Opt.case (Dom_html.document##getElementById (Js.string id) )

@@ -48,18 +48,10 @@ let get_last_event_rpc
 
 {client{
 
+open Common
 open Eliom_content.Html5
 
-type mode =
-  | Mode1 (* тупой режим *)
-  | Mode2 (* красивый*)
-  | Mode3 (* режим TODO *)
-
-(* http://www.jqwidgets.com/jquery-ui-splitter/
-   http://www.melonhtml5.com/demo/timeline/
-*)
-let switch_mode_event, switch_mode = React.E.create ()
-
+(*
 let _onModeChanged =
   let toggleMode1 on =
     List.iter (if on then JQ.Sel.show else JQ.Sel.hide) [".main-event-view"; ".main-events-list"; ".main-right"]
@@ -81,41 +73,9 @@ let _onModeChanged =
   in
   React.E.map f switch_mode_event
 
-
-
-(*
-let split s =
-    let len = String.length s in
-    let rec aux acc = function
-      | 0 -> acc
-      | n -> aux (s.[n - 1] :: acc) (pred n)
-    in aux [] len
-       *)
-(*
-let value_signal, set_value = React.S.create "initial"
-(* value_signal : string React.signal *)
-
-let value_len = React.S.map String.length value_signal
+let mode1_switch_callback on =
+  List.iter (if on then JQ.Sel.show else JQ.Sel.hide) [".main-event-view"; ".main-events-list"; ".main-right"]
  *)
-(* value_len : int React.signal *)
-(*
-let content_signal : Html5_types.div_content_fun elt React.signal =
-  React.S.map (fun value ->  let l = split value in
-                F.div (
-                  List.map (fun c ->
-                      F.p [F.pcdata (Printf.sprintf "%c" c) ]
-                    ) l
-                )
-              ) value_signal
-  *)
-(*
-let html_value_signal : [ `PCDATA ] R.elt list React.signal
-  = React.S.map (fun s -> [pcdata s]) value_signal
-
-let make_color len =
-  let d = (len * 10) mod 255 in
-  Printf.sprintf "color: rgb(%d,%d,%d)" d d d
-  *)
 
 let make_node_for_event e =
   let ts = ODates.(From.seconds e##timestamp |> To.string Printer.default) in
@@ -138,9 +98,11 @@ let main_handler () () =
   in
 
   let left_area =
-    let mode1_clicked = {Dom_html.mouseEvent Js.t->unit{ fun _ -> switch_mode Mode1 }} in
-    let mode2_clicked = {Dom_html.mouseEvent Js.t->unit{ fun _ -> switch_mode Mode2 }} in
-    let mode3_clicked = {Dom_html.mouseEvent Js.t->unit{ fun _ -> switch_mode Mode3 }} in
+    let mode1_clicked = {Dom_html.mouseEvent Js.t->unit{ fun _ -> switch_mode Common.Mode1 }} in
+    let mode2_clicked = {Dom_html.mouseEvent Js.t->unit{ fun _ -> switch_mode Common.Mode2 }} in
+    let mode3_clicked = {Dom_html.mouseEvent Js.t->unit{ fun _ -> switch_mode Common.Mode3 }} in
+    let mode4_clicked = {Dom_html.mouseEvent Js.t->unit{ fun _ -> switch_mode Common.Mode4 }} in
+
     div ~a:[a_class ["main-left-bar"]]
         [ div ~a:[a_class ["main-chat-area"]] [pcdata "chat"]
         ; div ~a:[a_class ["main-aux-buttons-area"]]
@@ -150,18 +112,24 @@ let main_handler () () =
               ; Unsafe.node "label" ~a:[ Unsafe.string_attrib "for" "aux-button-mode1"
                                        ; a_class ["aux-button-label"]
                                        ; a_onclick mode1_clicked
-                                       ] [pcdata "Mode 1"]
+                                       ] [pcdata "Mode 1 (Simple)"]
               ; input ~a:[a_class ["aux-button-radio"]; a_id "aux-button-mode2"; a_name "aux-buttons"]
                       ~input_type:`Radio ()
               ; Unsafe.node "label" ~a:[ Unsafe.string_attrib "for" "aux-button-mode2"
                                        ; a_class ["aux-button-label"]
-                                       ; a_onclick mode2_clicked] [pcdata "Mode 2"]
+                                       ; a_onclick mode2_clicked] [pcdata "Mode 2 (Timeline)"]
               ; input ~a:[ a_class ["aux-button-radio"]; a_id "aux-button-mode3"
                          ; a_name "aux-buttons" ]
                       ~input_type:`Radio ()
               ; Unsafe.node "label" ~a:[ Unsafe.string_attrib "for" "aux-button-mode3"
                                        ; a_class ["aux-button-label"]
-                                       ; a_onclick mode3_clicked] [pcdata "Mode 3"]
+                                       ; a_onclick mode3_clicked] [pcdata "Mode 3 (TODOs)"]
+              ; input ~a:[ a_class ["aux-button-radio"]; a_id "aux-button-mode4"
+                         ; a_name "aux-buttons" ]
+                      ~input_type:`Radio ()
+              ; Unsafe.node "label" ~a:[ Unsafe.string_attrib "for" "aux-button-mode4"
+                                       ; a_class ["aux-button-label"]
+                                       ; a_onclick mode4_clicked] [pcdata "Mode 4 (???)"]
               ; Unsafe.node "a" []
               ]
         ]
@@ -191,12 +159,9 @@ let main_handler () () =
               let params = Js.Unsafe.obj [||] in
               JQ.jq_selectable params (Ojquery.jQelt @@ Ojquery.js_jQ ".main-events-list")
          }};
-  ignore {unit{ Lwt.ignore_result
-    (lwt events = get_last_events () in
-     Manip.appendChildren %events_list_div @@ List.map make_node_for_event events;
-     Lwt.return ()
-    )
-  }};
+  ignore {unit{
+              switch_mode (Lochash.detect_mode ())
+         }};
 
   Lwt.return [ heading; left_area; center_view; right_area ]
 

@@ -18,6 +18,14 @@ open Eliom_content.Html5.D
 let show () = List.iter JQ.Sel.show [".main-timeline"]
 let hide () = List.iter JQ.Sel.hide [".main-timeline"]
 
+(* It is mode 2 *)
+
+let _onModeChanged =
+  let toggleMode on = if on then show () else hide () in
+  let f new_mode = toggleMode (new_mode = Common.Mode2) in
+  React.E.map f Common.switch_mode_event
+
+
 let get_last_events () : dbevent_js Js.t list Lwt.t =
     let ts = (jsnew Js.date_now ())##valueOf () in
     lwt s = %get_last_events_rpc (int_of_float ts) in
