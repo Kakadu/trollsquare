@@ -77,14 +77,6 @@ let mode1_switch_callback on =
   List.iter (if on then JQ.Sel.show else JQ.Sel.hide) [".main-event-view"; ".main-events-list"; ".main-right"]
  *)
 
-let make_node_for_event e =
-  let ts = ODates.(From.seconds e##timestamp |> To.string Printer.default) in
-  li ~a:[a_class ["event-list-item"]]
-    [ div ~a:[a_class ["event-list-item-title"]] [pcdata @@ Js.to_string e##title]
-    ; div ~a:[a_class ["event-list-item-time"]] [pcdata ts]
-  ]
-
-
  }}
 
 
@@ -136,9 +128,7 @@ let main_handler () () =
   in
   ignore {unit Lwt.t{
     let open Lwt_js_events in
-    lwt () = clicks (To_dom.of_button %initdb_btn) (fun e _ -> %initdb_rpc ()) in
-
-    Lwt.return ()
+    clicks (To_dom.of_button %initdb_btn) (fun e _ -> %initdb_rpc ())
   }};
 
   let events_list_div = div ~a:[a_class ["main-events-list"]] [] in
@@ -162,7 +152,6 @@ let main_handler () () =
   ignore {unit{
               switch_mode (Lochash.detect_mode ())
          }};
-
   Lwt.return [ heading; left_area; center_view; right_area ]
 
 

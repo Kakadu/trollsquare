@@ -321,6 +321,7 @@ let event_of_json = function
   | _ -> assert false
  *)
 let get_events (_:Types.timestamp) : string Lwt.t =
+  print_endline "db.get_events";
   let now_ts = Calendar.(now() |> to_unixfloat |> int_of_float) in
   let cmd = "match (e:EVENT) WHERE e.timestamp <= {ts} RETURN e ORDER by e.timestamp DESC LIMIT 10" in
   let params = [ ("ts", `Int now_ts) ] in

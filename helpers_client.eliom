@@ -95,7 +95,7 @@ module JQ = struct
   let jQelt e = Js.Unsafe.fun_call (Js.Unsafe.variable "jQuery")
     [| Js.Unsafe.inject e |]
 
-  let append_element el parent =
+  let append_element (el: Dom_html.element Js.t) parent =
     let args = alloc_args 1 in
     set_arg args 0 (Inject.identity el) ;
     let res = Ops.call_method parent "append" (build_args args) in
