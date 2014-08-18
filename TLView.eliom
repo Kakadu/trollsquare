@@ -13,6 +13,7 @@ let get_last_events_rpc
 }}
 
 {client{
+open Firebug
 open Helpers_client
 open Jstypes
 open Eliom_content.Html5
@@ -34,8 +35,15 @@ let clear () =
   ()
 
 let refresh () =
-  let make_node isleft ev =
+  let make_node isleft (ev: Jstypes.dbevent_js Js.t) =
     let ts = ODates.(From.seconds ev##timestamp |> To.string Printer.default) in
+    let moar = div ~a:[a_class ["timeline-element-more"]] [pcdata "MOAR"] in
+    Lwt_js_events.clicks (To_dom.of_div moar)
+      (fun e _ ->
+       Common.switch_mode Common.Mode4;
+       Common.show_node (Some ev);
+       Lwt.return ()
+      ) |> Lwt.ignore_result;
     div ~a:[a_class [ "timeline-element"
                     ; (if isleft then "timeline-element-left" else "timeline-element-right")
            ] ]
@@ -45,7 +53,7 @@ let refresh () =
                     ; span ~a:[a_class ["timeline-title-date"]] [ pcdata ts ]
                     ]
               ; div ~a:[a_class ["timeline-element-content"]] [pcdata @@ ev##title]
-              ; div ~a:[a_class ["timeline-element-more"]] [pcdata "MOAR"]
+              ; moar
               ]
         ]
   in

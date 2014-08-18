@@ -2,6 +2,7 @@
   open Eliom_lib
   open Eliom_content
   open Html5.D
+  open Helpers
 }}
 
 {client{
@@ -9,8 +10,8 @@
      open Printf
      open Helpers_client
      open Jstypes
+     open Helpers_client
 }}
-open Helpers
 
 module Trollsquare_app =
   Eliom_registration.App (
@@ -95,6 +96,28 @@ let main_handler () () =
     let mode3_clicked = {Dom_html.mouseEvent Js.t->unit{ fun _ -> switch_mode Common.Mode3 }} in
     let mode4_clicked = {Dom_html.mouseEvent Js.t->unit{ fun _ -> switch_mode Common.Mode4 }} in
 
+    ignore{unit{
+               let open Helpers_client in
+               for i=1 to 4 do
+                   Ojquery.(remove_attr (jQelt @@ js_jQ @@ sprintf "#aux-button-mode%d" i)) |> ignore
+               done;
+               let get_id = function
+                 | Common.Mode1 -> "aux-button-mode1"
+                 | Common.Mode2 -> "aux-button-mode2"
+                 | Common.Mode3 -> "aux-button-mode3"
+                 | Common.Mode4 -> "aux-button-mode4"
+               in
+
+               Lochash.detect_mode () |>
+               (fun m ->
+                   let ok o =
+                     let cb : Dom_html.element Js.t = (Js.Unsafe.coerce o) in
+                     cb##setAttribute (Js.string "checked", Js.string "")
+                   in
+                   with_element_by_id_exn (get_id m) ~ok ~bad:(fun _ -> ())
+               )
+          }};
+
     div ~a:[a_class ["main-left-bar"]]
         [ div ~a:[a_class ["main-chat-area"]] [pcdata "chat"]
         ; div ~a:[a_class ["main-aux-buttons-area"]]
@@ -141,6 +164,8 @@ let main_handler () () =
               ]
         ]
   in
+  let todo_view = div ~a:[a_class Mode3.class_names] [] in
+  let mode4_event_view = div ~a:[a_class [Mode4.container_classname] ] [] in
   let right_area =
     div ~a:[a_class ["main-right"]] [pcdata "right"]
   in
@@ -152,7 +177,7 @@ let main_handler () () =
   ignore {unit{
               switch_mode (Lochash.detect_mode ())
          }};
-  Lwt.return [ heading; left_area; center_view; right_area ]
+  Lwt.return [ heading; left_area; center_view; todo_view; right_area; mode4_event_view ]
 
 
 let () =
@@ -170,6 +195,8 @@ let () =
            ~css:[ ["css"; "trollsquare.css"]
                 ; ["css"; "main.css"]
                 ; ["css"; "timeline.css"]
+                ; ["css"; "todo-view.css"]
+                ; ["css"; "full-event-view.css" ]
                 ; ["css"; "work.css"]
                 ; ["css"; "jquery-ui.css"] ]
            Html5.F.(body ~a:[] xs)

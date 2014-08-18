@@ -13,6 +13,7 @@ open Helpers_client
 open Jstypes
 open Firebug
 open Eliom_content.Html5
+open Types
 
 let get_last_events () : dbevent_js Js.t list Lwt.t =
   let ts = (jsnew Js.date_now ())##valueOf () in
@@ -20,7 +21,7 @@ let get_last_events () : dbevent_js Js.t list Lwt.t =
   let ans = Array.to_list @@ Js.to_array @@ Json.unsafe_input @@ Js.string s in
   Lwt.return ans
 
-let make_node_for_event e =
+let make_node_for_event (e: Jstypes.dbevent_js Js.t) =
   let ts = ODates.(From.seconds e##timestamp |> To.string Printer.default) in
   li ~a:[a_class ["event-list-item"]]
     [ div ~a:[a_class ["event-list-item-title"]] [pcdata @@ e##title]
@@ -52,7 +53,5 @@ let _onModeChanged =
     ) |>  Lwt.ignore_result
   in
   React.E.map f Common.switch_mode_event
-
-
 
 }}

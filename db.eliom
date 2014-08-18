@@ -64,20 +64,21 @@ let make_nodes ?(verbose=false) events =
   in
   let connect_days = create_daylink in
 
-  let create_event ~parentid e =
+  let create_event ~parentid innerid e =
     let params = [ ("parentid", `Int parentid)
                  ; ("title", `String e.e_title)
+                 ; ("eventid", `Int innerid)
                  ; ("ts",   `Int e.e_timestamp)
                  ] in
     let cmd = "START day=node({parentid})
-               CREATE day-[:HAS_EVENT]->(e:EVENT{title: {title}, timestamp: {ts} })
+               CREATE day-[:HAS_EVENT]->(e:EVENT{title: {title}, timestamp: {ts}, eventid: {eventid} })
                RETURN id(e)
               " in
     API.wrap_cypher cmd ~params ~f:(fun _ ->
       OK ()
     )
   in
-  let f = fun ({e_desc; e_timestamp; e_title; _} as event) ->
+  let f = fun n ({e_desc; e_timestamp; e_title; _} as event) ->
     let day_ts = Calendar.(to_date @@ from_unixfloat @@ float_of_int e_timestamp) |> Date.to_unixfloat |> int_of_float in
     (*printf  "%s\n%d\n%!" e_title day_ts;*)
     let day_node_id : (int,_) result =
@@ -114,12 +115,12 @@ let make_nodes ?(verbose=false) events =
 
     let (_ : (_,_) result) = day_node_id >>= fun day_node_id ->
       (*printf "day_node_id=%d\n%!" day_node_id;*)
-      create_event ~parentid:day_node_id event >>= fun _ ->
+      create_event ~parentid:day_node_id n event >>= fun _ ->
       OK ()
     in
     ()
   in
-  List.iter events ~f
+  List.iteri events ~f
 
 let events =
   (* TODO maybe add variable with level of fakeness *)

@@ -35,7 +35,7 @@ let get_element_by_id_exn id =
 type any = Ojquery.t
 module Ops = struct
   external magic : 'a -> 'b = "%identity"
-  external constant : string -> any = "caml_js_const"
+  external constant : string -> any = "caml_js_expr"
   external call_method : any -> string -> any array -> any = "caml_js_meth_call"
 end
 module Inject = struct

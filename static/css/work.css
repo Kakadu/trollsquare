@@ -6,16 +6,17 @@
   list-style: none;
 }
 .event-list-item-title {
-  //margin-right: 150px;
   width: 70%;
-  float: left;;
+  float: left;
   left: 0px;
   display: inline-block;
+  padding: 3px 0px 3px 0px;
 }
 .event-list-item-time {
   width:  25%;
   float: right;
   display: inline-block;
+  padding: 3px 0px 3px 0px;
 }
 
 .main-aux-buttons-area input[type="radio"] {

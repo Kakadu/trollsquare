@@ -22,15 +22,7 @@ let read_hash () : hash_t =
   if hash_pos < 0 then []
   else split_amp (hash##slice_end (hash_pos+1) )
 
-let set_mode m =
-  let string_of_mode = function
-    | Common.Mode1 -> "1"
-    | Common.Mode2 -> "2"
-    | Common.Mode3 -> "3"
-    | Common.Mode4 -> "4"
-  in
-  let xs = read_hash ()
-           |> List.filter ~f:(fun (k,_) -> Js.to_string k <> "mode") in
+let set_helper' (k,v) xs =
   let postfix = List.fold_left xs
                   ~f:(fun acc (k,v) -> acc##concat_4 (Js.string "&", k, Js.string "=", v) )
                   ~init:(Js.string "")
@@ -41,8 +33,33 @@ let set_mode m =
     | -1 -> hash
     |  n -> hash##slice (0, n)
   in
-  let ans = prefix##concat_4 (Js.string "mode", Js.string "=", Js.string @@ string_of_mode m, postfix) in
-  Dom_html.window##location##hash <- prefix##concat_2 (Js.string "#", ans)
+  let ans = prefix##concat_4 (k, Js.string "=", v, postfix) in
+  Dom_html.window##location##hash <- prefix##concat_2 (Js.string "#", ans);
+  console##log (Dom_html.window##location##hash)
+
+let remove_value k =
+  let xs = read_hash () |> List.remove_assoc k in
+  match xs with
+  | [] -> Dom_html.window##location##hash <- Js.string ""
+  | (k,v)::tl -> set_helper' (k,v) tl
+
+let set_value ~key v =
+  console##log_3 (Js.string "set_value", Js.string key, Js.string v);
+  let k = Js.string key in
+  let xs = read_hash () (*|> List.remove_assoc k |> ((::) (k, Js.string v) ) *) in
+  set_helper' (k, Js.string v) xs
+
+let set_mode m =
+  let string_of_mode = function
+    | Common.Mode1 -> "1"
+    | Common.Mode2 -> "2"
+    | Common.Mode3 -> "3"
+    | Common.Mode4 -> "4"
+  in
+  let xs = read_hash ()
+           |> List.filter ~f:(fun (k,_) -> Js.to_string k <> "mode") in
+  set_helper' (Js.string "mode", Js.string @@ string_of_mode m) xs
+
 
 let detect_mode () : Common.mode =
   let xs = read_hash () in
@@ -57,5 +74,10 @@ let detect_mode () : Common.mode =
   in
   Option.get ~default:Common.Mode1 ans
 
+(*
+let get_value key =
+  let xs = read_hash () in
+  List.Assoc.assoc (Js.string key) xs |> Js.to_string
+ *)
 
    }}
