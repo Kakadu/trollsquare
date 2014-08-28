@@ -46,7 +46,7 @@ let remove_value k =
 let set_value ~key v =
   console##log_3 (Js.string "set_value", Js.string key, Js.string v);
   let k = Js.string key in
-  let xs = read_hash () (*|> List.remove_assoc k |> ((::) (k, Js.string v) ) *) in
+  let xs = read_hash () |> List.remove_assoc k (* |> ((::) (k, Js.string v) ) *) in
   set_helper' (k, Js.string v) xs
 
 let get_value_exn (k: string) : js_string t =

@@ -30,8 +30,19 @@ let draw_event (ev: Jstypes.dbevent_js Js.t) =
   let parent = Ojquery.(jQelt @@ js_jQ ("."^container_classname) ) in
   let d =
     div [ pcdata "WWWWWWWWWWWWQQQQQQQQQQQQQQQQQQQQQQQ"
-        ; div [ pcdata ev##title]
-        ; div [ pcdata @@ string_of_int ev##timestamp ]
+        ; div ~a:[a_class ["mode4-title"]]     [ pcdata ev##title]
+        ; div ~a:[a_class ["mode4-timestamp"]] [ pcdata @@ string_of_int ev##timestamp ]
+        ; div ~a:[a_class ["mode4-body"]] []
+        ; div ~a:[a_class ["mode4-links"]]
+              [ div ~a:[a_class ["mode4-confirmed-by"]]
+                    [ div [pcdata "Confirmed by"]
+                    ; div ~a:[a_class ["mode4-confirmed-by-container"]] []
+                    ]
+              ; div ~a:[a_class ["mode4-conflicts-with"]]
+                    [ div [pcdata "Conflics with"]
+                    ; div ~a:[a_class ["mode4-conflicts-with"]] []
+                    ]
+              ]
         ]
   in
   let (_: Ojquery.t) = JQ.append_element (Html5.To_dom.of_div d) parent in

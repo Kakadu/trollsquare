@@ -196,7 +196,7 @@ let () =
                 ; ["css"; "main.css"]
                 ; ["css"; "timeline.css"]
                 ; ["css"; "todo-view.css"]
-                ; ["css"; "full-event-view.css" ]
+                ; ["css"; "full-event-view.css" ]  (* mode 4 *)
                 ; ["css"; "work.css"]
                 ; ["css"; "jquery-ui.css"] ]
            Html5.F.(body ~a:[] xs)
