@@ -3,7 +3,16 @@ open Printf
 
 let firelog fmt = Firebug.console##log (Js.string @@ sprintf fmt)
 
-module List = ListLabels
+module List = struct
+  include ListLabels
+  module Assoc = struct
+    let find_exn ~key xs = assoc key xs
+    let (_: key:'a -> ('a*'b) list -> 'b) = find_exn
+
+    let find ~key xs = try  Some(find_exn ~key xs)
+                       with Not_found -> None
+  end
+end
 module ODates = ODate.Make(ODate.MakeImplem(Unix))
 
 

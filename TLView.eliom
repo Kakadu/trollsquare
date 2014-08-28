@@ -50,7 +50,7 @@ let refresh () =
         [ div ~a:[a_class ["timeline-element-box"] ]
               [ div ~a:[a_class ["timeline-element-title"]]
                     [ span ~a:[a_class ["timeline-title-label"]] [ pcdata "LABEL HERE" ]
-                    ; span ~a:[a_class ["timeline-title-date"]] [ pcdata ts ]
+                    ; span ~a:[a_class ["timeline-title-date"]]  [ pcdata ts ]
                     ]
               ; div ~a:[a_class ["timeline-element-content"]] [pcdata @@ ev##title]
               ; moar

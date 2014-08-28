@@ -33,8 +33,9 @@ _server/Mode3.cmo :
 _server/Mode3.cmx :
 _server/Mode3.cmo : _server/Mode3.type_mli
 _server/Mode3.cmx : _server/Mode3.type_mli
-_server/Mode4.cmo :
-_server/Mode4.cmx :
+_server/Mode4.cmo : _server/db.cmo
+_server/Mode4.cmx : _server/db.cmx
+_server/Mode4.type_mli : _server/db.cmo
 _server/Mode4.cmo : _server/Mode4.type_mli
 _server/Mode4.cmx : _server/Mode4.type_mli
 _server/neorest.cmo : _server/result.cmo _server/helpers.cmo

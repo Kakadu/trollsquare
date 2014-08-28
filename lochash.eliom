@@ -49,6 +49,14 @@ let set_value ~key v =
   let xs = read_hash () (*|> List.remove_assoc k |> ((::) (k, Js.string v) ) *) in
   set_helper' (k, Js.string v) xs
 
+let get_value_exn (k: string) : js_string t =
+  let key = Js.string k in
+  List.Assoc.find_exn ~key (read_hash())
+
+let get_value key =
+  try Some(get_value_exn key)
+  with Not_found -> None
+
 let set_mode m =
   let string_of_mode = function
     | Common.Mode1 -> "1"

@@ -64,14 +64,18 @@ let make_nodes ?(verbose=false) events =
   in
   let connect_days = create_daylink in
 
-  let create_event ~parentid innerid e =
+  let create_event ~parentid _innerid e =
     let params = [ ("parentid", `Int parentid)
                  ; ("title", `String e.e_title)
-                 ; ("eventid", `Int innerid)
+                 (*; ("eventid", `Int innerid) *)
                  ; ("ts",   `Int e.e_timestamp)
                  ] in
-    let cmd = "START day=node({parentid})
-               CREATE day-[:HAS_EVENT]->(e:EVENT{title: {title}, timestamp: {ts}, eventid: {eventid} })
+    let cmd = "MERGE (id:UniqueId{name:'event'})
+               ON CREATE SET id.count = 1
+               ON MATCH SET id.count = id.count + 1
+               WITH id.count AS uid_
+               START day=node({parentid})
+               CREATE day-[:HAS_EVENT]->(e:EVENT{title: {title}, timestamp: {ts}, eventid: uid_ })
                RETURN id(e)
               " in
     API.wrap_cypher cmd ~params ~f:(fun _ ->
@@ -321,6 +325,7 @@ let event_of_json = function
      Types.({e_desc; e_timestamp; e_title; e_url})
   | _ -> assert false
  *)
+
 let get_events (_:Types.timestamp) : string Lwt.t =
   print_endline "db.get_events";
   let now_ts = Calendar.(now() |> to_unixfloat |> int_of_float) in
@@ -337,5 +342,19 @@ let get_events (_:Types.timestamp) : string Lwt.t =
   let s = Yojson.to_string (`List j3) in
   print_endline s;
   Lwt.return s
+
+(* uid is inner id *)
+let event_by_uid uid : string Lwt.t =
+  let cmd = "match (e:EVENT) WHERE e.uid = {uid} RETURN e" in
+  let params = [ ("uid", `Int uid) ] in
+  let s = API.make_n_commit cmd ~params in
+  print_endline s;
+  let j = s |> to_json  in
+  let open YoUtil in
+  let j2 = j |> drop_assoc |> List.assoc "results" |> drop_list |> List.hd
+           |> drop_assoc  |> List.assoc "data" |> drop_list
+  in
+  let j3 = List.map j2 ~f:(fun x -> x |> drop_assoc |> List.assoc "row" |> drop_list |> List.hd ) in
+  Lwt.return @@ Yojson.to_string @@ List.hd j3
 
 }}
