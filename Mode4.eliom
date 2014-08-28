@@ -40,7 +40,7 @@ let draw_event (ev: Jstypes.dbevent_js Js.t) =
                     ]
               ; div ~a:[a_class ["mode4-conflicts-with"]]
                     [ div [pcdata "Conflics with"]
-                    ; div ~a:[a_class ["mode4-conflicts-with"]] []
+                    ; div ~a:[a_class ["mode4-conflicts-with-container"]] []
                     ]
               ]
         ]
