@@ -2,6 +2,7 @@
 open Printf
 
 let firelog fmt = Firebug.console##log (Js.string @@ sprintf fmt)
+let print_endline s = Firebug.console##log (Js.string s)
 
 module List = struct
   include ListLabels
@@ -122,8 +123,16 @@ module JQ = struct
 
   let clear obj =
     let args = alloc_args 0 in
-    let res = Ops.call_method obj "clear" (build_args args) in
+    let res = Ops.call_method obj "empty" (build_args args) in
     extract_t res
+
+  let attr obj (name: string) (newval: string) =
+    let args = alloc_args 2 in
+    set_arg args 0 (Inject.identity @@ Js.string name) ;
+    set_arg args 1 (Inject.identity @@ Js.string newval) ;
+    let res = Ops.call_method obj "attr" (build_args args) in
+    extract_t res
+
 
   module Sel = struct
     let show s = show @@ jQelt (Js.string s)

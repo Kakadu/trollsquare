@@ -4,32 +4,54 @@
   margin-left: 200px;
   width: 1000px;
   overflow-y: scroll;
+  height: 100%;
 }
 
 .mode4-title {
-
+  //position: absolute;
+  left: 0px; top: 0px;
+  width: 50%;
+  display: inline-block;
 }
 
 .mode4-timestamp {
-
+  //position: absolute;
+  display: inline-block;
+  width: 150px;
+  min-height: 60px;
 }
 
 .mode4-body {
 
+  width: 70%;
+  min-height: 100px;
+  border: 1px solid;
 }
 
 .mode4-links {
-
+  position: absolute;
+  width: 25%;
+  right: 0px; top: 0px;
+  height: 100%;
 }
 .mode4-confirmed-by {
-
+  height: 50%;
+  top: 0px;
 }
 .mode4-confirmed-by-container {
-
+  width: 25%;
+  border: 1px solid;
+  height: 90%;
+  width:  95%;
 }
 .mode4-conflicts-with {
+  height: 50%;
+  bottom: 0px;
 
 }
 .mode4-conflicts-with-container {
-
+  width: 25%;
+  border: 1px solid;
+  height: 90%;
+  width:  95%;
 }

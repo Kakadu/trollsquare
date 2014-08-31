@@ -22,16 +22,19 @@ open Firebug
 let classes = [ "."^container_classname ]
 
 let clear () =
-  List.iter classes ~f:(fun cid -> ignore @@ Ojquery.(empty @@ jQelt @@ js_jQ cid) );
+  console##log (Js.string "clear ()");
+  List.iter classes ~f:(fun cid ->
+                        console##log (Js.string cid);
+                        ignore @@ JQ.clear @@ Ojquery.(jQelt @@ js_jQ cid) );
   ()
 
 let draw_event (ev: Jstypes.dbevent_js Js.t) =
   let open Eliom_content.Html5.D in
   let parent = Ojquery.(jQelt @@ js_jQ ("."^container_classname) ) in
+  let ts = ODates.(From.seconds ev##timestamp |> To.string Printer.default) in
   let d =
-    div [ pcdata "WWWWWWWWWWWWQQQQQQQQQQQQQQQQQQQQQQQ"
-        ; div ~a:[a_class ["mode4-title"]]     [ pcdata ev##title]
-        ; div ~a:[a_class ["mode4-timestamp"]] [ pcdata @@ string_of_int ev##timestamp ]
+    div [ div ~a:[a_class ["mode4-title"]]     [ pcdata ev##title]
+        ; div ~a:[a_class ["mode4-timestamp"]] [ pcdata ts ]
         ; div ~a:[a_class ["mode4-body"]] []
         ; div ~a:[a_class ["mode4-links"]]
               [ div ~a:[a_class ["mode4-confirmed-by"]]
@@ -46,7 +49,7 @@ let draw_event (ev: Jstypes.dbevent_js Js.t) =
         ]
   in
   let (_: Ojquery.t) = JQ.append_element (Html5.To_dom.of_div d) parent in
-  Lochash.set_value "id" (string_of_int ev##uid);
+  Lochash.set_value "uid" (string_of_int ev##uid);
   ()
 
 let _onModeChanged =
@@ -56,6 +59,7 @@ let _onModeChanged =
         Lochash.set_mode Common.Mode4;
         List.iter JQ.Sel.show classes
       end else begin
+        console##log (Js.string "turn Mode4 off");
         List.iter JQ.Sel.hide classes;
         clear ();
         Lochash.remove_value @@ Js.string "id";
@@ -63,7 +67,7 @@ let _onModeChanged =
   in
   let f new_mode =
     toggleMode (new_mode = Common.Mode4);
-    match Lochash.get_value "id" with
+    match Lochash.get_value "uid" with
     | None -> ()
     | Some id -> (* id is inner node id `uid`, not neo4j id *)
        let id = int_of_string @@ Js.to_string id in

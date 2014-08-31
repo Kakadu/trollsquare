@@ -75,7 +75,7 @@ let make_nodes ?(verbose=false) events =
                ON MATCH SET id.count = id.count + 1
                WITH id.count AS uid_
                START day=node({parentid})
-               CREATE day-[:HAS_EVENT]->(e:EVENT{title: {title}, timestamp: {ts}, eventid: uid_ })
+               CREATE day-[:HAS_EVENT]->(e:EVENT{title: {title}, timestamp: {ts}, uid: uid_ })
                RETURN id(e)
               " in
     API.wrap_cypher cmd ~params ~f:(fun _ ->

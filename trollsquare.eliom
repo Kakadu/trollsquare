@@ -8,9 +8,9 @@
 {client{
      open Eliom_content.Html5
      open Printf
-     open Helpers_client
      open Jstypes
      open Helpers_client
+     open Firebug
 }}
 
 module Trollsquare_app =
@@ -98,9 +98,6 @@ let main_handler () () =
 
     ignore{unit{
                let open Helpers_client in
-               for i=1 to 4 do
-                   Ojquery.(remove_attr (jQelt @@ js_jQ @@ sprintf "#aux-button-mode%d" i)) |> ignore
-               done;
                let get_id = function
                  | Common.Mode1 -> "aux-button-mode1"
                  | Common.Mode2 -> "aux-button-mode2"
@@ -108,14 +105,30 @@ let main_handler () () =
                  | Common.Mode4 -> "aux-button-mode4"
                in
 
-               Lochash.detect_mode () |>
-               (fun m ->
-                   let ok o =
-                     let cb : Dom_html.element Js.t = (Js.Unsafe.coerce o) in
-                     cb##setAttribute (Js.string "checked", Js.string "")
-                   in
-                   with_element_by_id_exn (get_id m) ~ok ~bad:(fun _ -> ())
-               )
+               let f m =
+                 console##log (Js.string "mode switched");
+                 for i=1 to 4 do
+                   Ojquery.(remove_attr (jQelt @@ js_jQ @@ sprintf "#aux-button-mode%d" i) "checked")
+                   |> ignore
+                 done;
+                 let ok o =
+                   print_endline "check element found";
+                   let cb : Dom_html.element Js.t = (Js.Unsafe.coerce o) in
+                   print_endline "setting attribute";
+                   console##log (cb);
+                   let _ = JQ.attr (Ojquery.jQelt o) "checked" "" in
+                   (*cb##setAttribute (Js.string "checked", Js.string ""); *)
+                   console##log (cb);
+                   ()
+                 in
+                 let id = get_id m in
+                 print_endline id;
+                 with_element_by_id_exn (get_id m) ~ok
+                                        ~bad:(fun _ -> console##log (Js.string "some error"))
+               in
+               f @@ Lochash.detect_mode ();
+               let (_: 'a React.event) = React.E.map f Common.switch_mode_event in
+               ()
           }};
 
     div ~a:[a_class ["main-left-bar"]]
