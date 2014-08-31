@@ -5,6 +5,8 @@ open Helpers_client
 open Printf
 open Js
 
+let to_jsstring () = Dom_html.window##location##hash
+
 type hash_t = ((js_string t) * (js_string t)) list
 
 let read_hash () : hash_t =
@@ -38,7 +40,8 @@ let set_helper' (k,v) xs =
   console##log (Dom_html.window##location##hash)
 
 let remove_value k =
-  let xs = read_hash () |> List.remove_assoc k in
+  let xs = read_hash () |> List.Assoc.remove ~key:k in
+  printf "after len = %d\n" (List.length xs);
   match xs with
   | [] -> Dom_html.window##location##hash <- Js.string ""
   | (k,v)::tl -> set_helper' (k,v) tl

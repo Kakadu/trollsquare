@@ -1,8 +1,10 @@
 {client{
 open Printf
+open Firebug
 
-let firelog fmt = Firebug.console##log (Js.string @@ sprintf fmt)
-let print_endline s = Firebug.console##log (Js.string s)
+let firelog fmt = console##log (Js.string @@ sprintf fmt)
+let printf = firelog
+let print_endline s = console##log (Js.string s)
 
 module List = struct
   include ListLabels
@@ -12,6 +14,9 @@ module List = struct
 
     let find ~key xs = try  Some(find_exn ~key xs)
                        with Not_found -> None
+    let remove ~key xs =
+      (*console##log_2 (Js.string "remove: ", key);*)
+      filter xs ~f:(fun (k,_) -> k <> key)
   end
 end
 module ODates = ODate.Make(ODate.MakeImplem(Unix))

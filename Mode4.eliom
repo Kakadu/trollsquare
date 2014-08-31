@@ -24,9 +24,13 @@ let classes = [ "."^container_classname ]
 let clear () =
   console##log (Js.string "clear ()");
   List.iter classes ~f:(fun cid ->
-                        console##log (Js.string cid);
-                        ignore @@ JQ.clear @@ Ojquery.(jQelt @@ js_jQ cid) );
-  ()
+                        console##log (Js.string cid); (*
+                        console##log (Ojquery.js_jQ cid); *)
+                        let el = Ojquery.(jQelt @@ js_jQ cid) in
+                        console##log (el);
+                        ignore @@ JQ.clear el ;
+                        console##log (el);
+                       )
 
 let draw_event (ev: Jstypes.dbevent_js Js.t) =
   let open Eliom_content.Html5.D in
@@ -59,10 +63,11 @@ let _onModeChanged =
         Lochash.set_mode Common.Mode4;
         List.iter JQ.Sel.show classes
       end else begin
-        console##log (Js.string "turn Mode4 off");
+        (*console##log (Js.string "turn Mode4 off");*)
         List.iter JQ.Sel.hide classes;
         clear ();
-        Lochash.remove_value @@ Js.string "id";
+        Lochash.remove_value @@ Js.string "uid";
+        (*console##log_2 (Js.string "hash = " , Lochash.to_jsstring ());*)
       end
   in
   let f new_mode =

@@ -1,12 +1,12 @@
 {shared{
   open Eliom_lib
   open Eliom_content
+  open Eliom_content.Html5
   open Html5.D
   open Helpers
 }}
 
 {client{
-     open Eliom_content.Html5
      open Printf
      open Jstypes
      open Helpers_client
@@ -178,14 +178,14 @@ let main_handler () () =
         ]
   in
   let todo_view = div ~a:[a_class Mode3.class_names] [] in
-  let mode4_event_view = div ~a:[a_class [Mode4.container_classname] ] [] in
+  let mode4_event_view = D.div ~a:[a_class [Mode4.container_classname] ] [] in
   let right_area =
     div ~a:[a_class ["main-right"]] [pcdata "right"]
   in
 
   ignore {unit{
               let params = Js.Unsafe.obj [||] in
-              JQ.jq_selectable params (Ojquery.jQelt @@ Ojquery.js_jQ ".main-events-list")
+              JQ.jq_selectable params Ojquery.(jQelt @@ js_jQ ".main-events-list")
          }};
   ignore {unit{
               switch_mode (Lochash.detect_mode ())
