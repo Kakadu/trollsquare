@@ -7,6 +7,7 @@ type event = {
   e_desc:  string;
   e_title: string;
   e_url:   string;
+  e_shortcut: string;  (* UNIQUE *)
 }
 
 }}

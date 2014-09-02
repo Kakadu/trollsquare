@@ -129,187 +129,160 @@ let make_nodes ?(verbose=false) events =
 let events =
   (* TODO maybe add variable with level of fakeness *)
   let open Calendar in
-  let make yy mm dd hh mi ss =
+  let ts yy mm dd hh mi ss =
     Calendar.(make yy mm dd hh mi ss |> to_unixfloat |> int_of_float)
   in
-  [ { e_timestamp = make 2014 07 17 19 02 00
-    ; e_title="Ukraine relocates SA-17 Grizzly to Ukrainian-Russian border"
-    ; e_desc=""
-    ; e_url ="http://anti-maidan.com/index.php?p=news&id=3957"
+  let make ?(desc="") ?(shortcut="") ~ts ~title ~url =
+    { e_timestamp = ts
+    ; e_title = title
+    ; e_desc = desc
+    ; e_url =  url
+    ; e_shortcut = shortcut
     }
-  ; { e_timestamp = make 2014 07 17 20 00 00
-    ; e_title="Boeing 777 of Malaisia airlaines crashes near Ukrainian-Russian border"
-    ; e_desc=""
-    ; e_url= "" }
+  in
+  [ make ~ts:(ts 2014 07 17 19 02 00)
+         ~title:"Ukraine relocates SA-17 Grizzly to Ukrainian-Russian border"
+         ~url:"http://anti-maidan.com/index.php?p=news&id=3957"
+         ~desc:""
+         ~shortcut:""
 
-  ; { e_timestamp = make 2014 07 17 22 00 00
-    ; e_title="Mass-Media: The real target of Ukranian missle was V.Putin's airplane"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&id=3965" }
-  ; { e_timestamp = make 2014 07 17 22 19 00
-    ; e_title="Flight recorders are found on planecrash area"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&id=3966" }
-  ; { e_timestamp = make 2014 07 17 22 51 00
-    ; e_title="Flightradar24: before its dissappearing Boeing was located near city of Kremenchug"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&id=3968" }
-  ; { e_timestamp = make 2014 07 17 23 20 00
-    ; e_title="CNN: Are separatists able to destrot Boeing?"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&id=3967" }
-  ; { e_timestamp = make 2014 07 18 00 13 00
-    ; e_title="V.Putin accuses Ukraine in Boeing catastophe"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&id=3971" }
-  ; { e_timestamp = make 2014 07 18 00 25 00
-    ; e_title="Donetsk People's Republic is concluding local armistice near plane's crash area"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&id=3973" }
-  ; { e_timestamp = make 2014 07 18 01 14 00
-    ; e_title="Spanish dispatcher have seen Ukrainian Air Forces near crashed Boeing"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&id=3976" }
-  ; { e_timestamp = make 2014 07 18 08 15 00
-    ; e_title="OSCE is calling to seal off zone of aircrash"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&id=3994" }
-  ; { e_timestamp = make 2014 07 18 14 14 00
-    ; e_title="DNR: Kiev's attempts to claim us in Boeing catastrophe are awkward"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&id=3988" }
-  ; { e_timestamp = make 2014 07 18 20 37 00
-    ; e_title="OSCE wathers have got limited access to the area of aircrash"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&id=4009" }
-  ; { e_timestamp = make 2014 07 18 21 48 00
-    ; e_title="John Kirby: The Pentagon doesn't know who have destroyed the Boeing MH17"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&id=4011" }
-  ; { e_timestamp = make 2014 07 18 21 55 00
-    ; e_title="Journalist: Boeing was flying at 480 km to north comparately to normal route"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&id=4013" }
-  ; { e_timestamp = make 2014 07 19 04 43 00
-    ; e_title="Karakas: The catastrophe of Boeing is result of actions of USA"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&id=4025" }
-  ; { e_timestamp = make 2014 07 19 06 38 00
-    ; e_title="S.Lavrov: Russia will not decypher 'black boxes' on its own territory"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&id=4028" }
-  ; { e_timestamp = make 2014 07 19 07 10 00
-    ; e_title="China and Argentina call to objective investigation of aircrash"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&id=4030" }
-  ; { e_timestamp = make 2014 07 19 13 27 00
-    ; e_title="Ministry of Defense of Russian asks Kiev 10 questions about Boeing"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&id=4038" }
-  ; { e_timestamp = make 2014 07 19 15 19 00
-    ; e_title="DNR vice prime minister: Kiev prevents aircrash investigation"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&cat=2&id=4042" }
-  ; { e_timestamp = make 2014 07 20 02 58 00
-    ; e_title="DNR gurantees safety for experts on Boeing crash area"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&cat=2&id=4068" }
-  ; { e_timestamp = make 2014 07 20 08 03 00
-    ; e_title="OSCE delegation works on aircrash area"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&cat=2&id=4076" }
-  ; { e_timestamp = make 2014 07 20 23 45 00
-    ; e_title="LNR;s boss of anti-espionage: The purpose of Ukrainian air forses was to crash Boeing on Russian territory"
-    ; e_desc=""
-    ; e_url= "" }
-  ; { e_timestamp = make 2014 07 21 09 05 00
-    ; e_title="IKAO experts arrive to Kiev"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&cat=2&id=4128" }
-  ; { e_timestamp = make 2014 07 21 11 36 00
-    ; e_title="Experts from Netherlands arrive to city of Torez"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&cat=2&id=4133" }
-  ; { e_timestamp = make 2014 07 21 15 36 00
-    ; e_title="DNR: Arriving of Malaisian experts can be postpones becuase skirmishes at Donetsk"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&cat=2&id=4147" }
-  ; { e_timestamp = make 2014 07 21 17 24 00
-    ; e_title="Congressman: The crash of MH17 is a result of US's support of Maidan"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&cat=2&id=4157" }
-  ; { e_timestamp = make 2014 07 21 18 23 00
-    ; e_title="B.Obama comments situation in the Ukraine"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&cat=2&id=4160" }
-  ; { e_timestamp = make 2014 07 21 18 36 00
-    ; e_title="Press conference of Malaisian prime minister"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&cat=2&id=4168" }
-  ; { e_timestamp = make 2014 07 21 20 30 00
-    ; e_title="Pentagon doesn't beleive MD of Russia"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&cat=2&id=4171" }
-  ; { e_timestamp = make 2014 07 21 22 59 00
-    ; e_title="UN's conference about aircrash0"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&cat=2&id=4174" }
-  ; { e_timestamp = make 2014 07 21 23 09 00
-    ; e_title="What US is hiding when they don't show photos from satellite"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&cat=2&id=4179" }
-  ; { e_timestamp = make 2014 07 22 01 28 00
-    ; e_title="Plane recorded is transferred to Malaisian delegation"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&cat=2&id=4186" }
-  ; { e_timestamp = make 2014 07 22 09 16 00
-    ; e_title="R.Perry: American satellite shows that Boeing was destroyed by Ukrainian military forces"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&cat=2&id=4192" }
-  ; { e_timestamp = make 2014 07 22 19 00 00
-    ; e_title="The Finantioal Times presents eveidences that MH17 was destroyed by missle "
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&cat=2&id=4216" }
-  ; { e_timestamp = make 2014 07 22 19 20 00
-    ; e_title="US Natianl departmes uses data from social networks as main source about MH117"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&cat=2&id=4217" }
-  ; { e_timestamp = make 2014 07 23 00  41 00
-    ; e_title="US has not eveidences that Russia is connected to Boeing's crash"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&cat=2&id=4240" }
-  ; { e_timestamp = make 2014 07 23 04 31 00
-    ; e_title="Poll about Boeing on ukrainian news web-site"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&cat=2&id=4244" }
-  ; { e_timestamp = make 2014 07 23 11 31 00
-    ; e_title="Facts presented by US natianal depatment raise questions from journalists"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&cat=2&id=4251" }
-  ; { e_timestamp = make 2014 07 23 20 40 00
-    ; e_title="OSCE missions: militia have granted full access to all objects of airchrash"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&cat=2&id=4281" }
-  ; { e_timestamp = make 2014 07 23 21 00 00
-    ; e_title="Malaisia accuses US at using MH117 crash in their geopolitical interests"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&cat=2&id=4291" }
-  ; { e_timestamp = make 2014 07 24 05 26 00
-    ; e_title="A.Sharij have found SA-11 claimed by ukrainin air forces as Russian."
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&cat=2&id=4311" }
-  ; { e_timestamp = make 2014 07 24 05 51 00
-    ; e_title="Ukraine will not give out recorders between air traffic controllers and MH117"
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&cat=2&id=4317" }
-  ; { e_timestamp = make 2014 07 24 08 50 00
-    ; e_title="IKAO: Flyght recorder of speech is in good shape "
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&cat=2&id=4323" }
-  ; { e_timestamp = make 2014 07 24 20 00 00
-    ; e_title="Rusian Ministry of Defense: all connects between crash of MH117 and militia are based on information from social networks "
-    ; e_desc=""
-    ; e_url= "http://anti-maidan.com/index.php?p=news&cat=2&id=4329" }
+  ; make ~ts:(ts 2014 07 17 20 00 00)
+         ~title:"Boeing 777 of Malaisia airlaines crashes near Ukrainian-Russian border"
+         ~url:""
+
+  ; make ~ts:(ts 2014 07 17 22 00 00)
+         ~title:"Mass-Media: The real target of Ukranian missle was V.Putin's airplane"
+         ~url: "http://anti-maidan.com/index.php?p=news&id=3965"
+  ; make ~ts:(ts 2014 07 17 22 19 00)
+         ~title:"Flight recorders are found on planecrash area"
+         ~url: "http://anti-maidan.com/index.php?p=news&id=3966"
+  ; make ~ts:(ts 2014 07 17 22 51 00)
+         ~title:"Flightradar24: before its dissappearing Boeing was located near city of Kremenchug"
+         ~url: "http://anti-maidan.com/index.php?p=news&id=3968"
+  ; make ~ts:(ts 2014 07 17 23 20 00)
+         ~title:"CNN: Are separatists able to destrot Boeing?"
+         ~url: "http://anti-maidan.com/index.php?p=news&id=3967"
+  ; make ~ts:(ts 2014 07 18 00 13 00)
+         ~title:"V.Putin accuses Ukraine in Boeing catastophe"
+         ~url: "http://anti-maidan.com/index.php?p=news&id=3971"
+  ; make ~ts:(ts 2014 07 18 00 25 00)
+         ~title:"Donetsk People's Republic is concluding local armistice near plane's crash area"
+         ~url: "http://anti-maidan.com/index.php?p=news&id=3973"
+  ; make ~ts:(ts 2014 07 18 01 14 00)
+         ~title:"Spanish dispatcher have seen Ukrainian Air Forces near crashed Boeing"
+         ~url: "http://anti-maidan.com/index.php?p=news&id=3976"
+  ; make ~ts:(ts 2014 07 18 08 15 00)
+         ~title:"OSCE is calling to seal off zone of aircrash"
+         ~url: "http://anti-maidan.com/index.php?p=news&id=3994"
+  ; make ~ts:(ts 2014 07 18 14 14 00)
+         ~title:"DNR: Kiev's attempts to claim us in Boeing catastrophe are awkward"
+         ~url: "http://anti-maidan.com/index.php?p=news&id=3988"
+  ; make ~ts:(ts 2014 07 18 20 37 00)
+         ~title:"OSCE wathers have got limited access to the area of aircrash"
+         ~url: "http://anti-maidan.com/index.php?p=news&id=4009"
+  ; make ~ts:(ts 2014 07 18 21 48 00)
+         ~title:"John Kirby: The Pentagon doesn't know who have destroyed the Boeing MH17"
+         ~url: "http://anti-maidan.com/index.php?p=news&id=4011"
+  ; make ~ts:(ts 2014 07 18 21 55 00)
+         ~title:"Journalist: Boeing was flying at 480 km to north comparately to normal route"
+         ~url: "http://anti-maidan.com/index.php?p=news&id=4013"
+  ; make ~ts:(ts 2014 07 19 04 43 00)
+         ~title:"Karakas: The catastrophe of Boeing is result of actions of USA"
+         ~url: "http://anti-maidan.com/index.php?p=news&id=4025"
+  ; make ~ts:(ts 2014 07 19 06 38 00)
+         ~title:"S.Lavrov: Russia will not decypher 'black boxes' on its own territory"
+         ~url: "http://anti-maidan.com/index.php?p=news&id=4028"
+  ; make ~ts:(ts 2014 07 19 07 10 00)
+         ~title:"China and Argentina call to objective investigation of aircrash"
+         ~url: "http://anti-maidan.com/index.php?p=news&id=4030"
+  ; make ~ts:(ts 2014 07 19 13 27 00)
+         ~title:"Ministry of Defense of Russian asks Kiev 10 questions about Boeing"
+         ~url: "http://anti-maidan.com/index.php?p=news&id=4038"
+  ; make ~ts:(ts 2014 07 19 15 19 00)
+         ~title:"DNR vice prime minister: Kiev prevents aircrash investigation"
+         ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4042"
+  ; make ~ts:(ts 2014 07 20 02 58 00)
+         ~title:"DNR gurantees safety for experts on Boeing crash area"
+         ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4068"
+  ; make ~ts:(ts 2014 07 20 08 03 00)
+         ~title:"OSCE delegation works on aircrash area"
+         ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4076"
+  ; make ~ts:(ts 2014 07 20 23 45 00)
+         ~title:"LNR;s boss of anti-espionage: The purpose of Ukrainian air forses was to crash Boeing on Russian territory"
+         ~url: ""
+  ; make ~ts:(ts 2014 07 21 09 05 00)
+         ~title:"IKAO experts arrive to Kiev"
+         ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4128"
+  ; make ~ts:(ts 2014 07 21 11 36 00)
+         ~title:"Experts from Netherlands arrive to city of Torez"
+         ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4133"
+  ; make ~ts:(ts 2014 07 21 15 36 00)
+         ~title:"DNR: Arriving of Malaisian experts can be postpones becuase skirmishes at Donetsk"
+         ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4147"
+  ; make ~ts:(ts 2014 07 21 17 24 00)
+         ~title:"Breifing of Ministry of Defense of Russia"
+         ~url: "http://anti-maidan.com/index.php?p=news&id=4149"
+  ; make ~ts:(ts 2014 07 21 17 24 00)
+         ~title:"Congressman: The crash of MH17 is a result of US's support of Maidan"
+         ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4157"
+  ; make ~ts:(ts 2014 07 21 18 23 00)
+         ~title:"B.Obama comments situation in the Ukraine"
+         ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4160"
+  ; make ~ts:(ts 2014 07 21 18 36 00)
+    ~title:"Press conference of Malaisian prime minister"
+    ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4168"
+  ; make ~ts:(ts 2014 07 21 20 30 00)
+         ~title:"Pentagon doesn't beleive MD of Russia"
+         ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4171"
+  ; make ~ts:(ts 2014 07 21 22 59 00)
+         ~title:"UN's conference about aircrash0"
+         ~url: "Http://Anti-Maidan.Com/index.php?p=news&cat=2&id=4174"
+  ; make ~ts:(ts 2014 07 21 23 09 00)
+         ~title:"What US is hiding when they don't show photos from satellite"
+         ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4179"
+  ; make ~ts:(ts 2014 07 22 01 28 00)
+         ~title:"Plane recorded is transferred to Malaisian delegation"
+         ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4186"
+  ; make ~ts:(ts 2014 07 22 09 16 00)
+         ~title:"R.Perry: American satellite shows that Boeing was destroyed by Ukrainian military forces"
+         ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4192"
+  ; make ~ts:(ts 2014 07 22 19 00 00)
+         ~title:"The Finantioal Times presents eveidences that MH17 was destroyed by missle "
+         ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4216"
+  ; make ~ts:(ts 2014 07 22 19 20 00)
+         ~title:"US Natianal department uses data from social networks as main source about MH117"
+         ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4217"
+  ; make ~ts:(ts 2014 07 22 23 12 00)
+         ~title:"LJ, stepasyuk: The facts about which Russian Ministry of defense is lying"
+         ~url: "http://stepasyuk.livejournal.com/11192.html"
+         ~shortcut:"stepasyuk1"
+  ; make ~ts:(ts 2014 07 23 00  41 00)
+         ~title:"US has not eveidences that Russia is connected to Boeing's crash"
+         ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4240"
+  ; make ~ts:(ts 2014 07 23 04 31 00)
+         ~title:"Poll about Boeing on ukrainian news web-site"
+         ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4244"
+  ; make ~ts:(ts 2014 07 23 11 31 00)
+         ~title:"Facts presented by US natianal depatment raise questions from journalists"
+         ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4251"
+  ; make ~ts:(ts 2014 07 23 20 40 00)
+         ~title:"OSCE missions: militia have granted full access to all objects of airchrash"
+         ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4281"
+  ; make ~ts:(ts 2014 07 23 21 00 00)
+         ~title:"Malaisia accuses US at using MH117 crash in their geopolitical interests"
+         ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4291"
+  ; make ~ts:(ts 2014 07 24 05 26 00)
+         ~title:"A.Sharij have found SA-11 claimed by ukrainin air forces as Russian."
+         ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4311"
+  ; make ~ts:(ts 2014 07 24 05 51 00)
+         ~title:"Ukraine will not give out recorders between air traffic controllers and MH117"
+         ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4317"
+  ; make ~ts:(ts 2014 07 24 08 50 00)
+         ~title:"IKAO: Flyght recorder of speech is in good shape "
+         ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4323"
+  ; make ~ts:(ts 2014 07 24 20 00 00)
+         ~title:"Rusian Ministry of Defense: all connects between crash of MH117 and militia are based on information from social networks "
+         ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4329"
 
   ]
 
