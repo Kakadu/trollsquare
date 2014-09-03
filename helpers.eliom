@@ -72,6 +72,7 @@ module String = struct
       let i = rindex s by in
       sub s ~pos:(i+1) ~len:(String.length s - i - 1)
     with Not_found -> s
+
 end
 
 module Int = struct
@@ -84,5 +85,8 @@ module Exn = struct
   let backtrace = Printexc.get_backtrace
 end
 
+module Ref = struct
+  let replace r ~f =  r:= (f !r)
+end
 
 }}
