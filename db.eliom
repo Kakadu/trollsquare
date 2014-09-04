@@ -186,12 +186,14 @@ let create_question ~parent ~title is =
     let cre = sprintf "CREATE q-[:HAS_INTERPRET]->(i%d:INTERPRET{ text: \"%s\", shortcut: \"%s\" })"
                       n ri_text ri_shortcut
     in
-    let bad  = List.filter_map ri_conflicts ~f:(fun s ->
-      if s<>"" then Some(sprintf "CREATE i%d-[:CONFLICTS]->(:EVENT{uid: %d})\n" n (Shortcuts.find_exn s))
+    let bad  = List.filter_mapi ri_conflicts ~f:(fun i s ->
+      if s<>""
+      then Some(sprintf "MATCH (dest%d:EVENT{uid: %d}) CREATE i%d-[:CONFLICTS]->dest%d\n" i (Shortcuts.find_exn s) n i)
       else None
     )  in
-    let good = List.filter_map ri_conforms ~f:(fun s ->
-      if s<>"" then Some(sprintf "CREATE i%d-[:CONFORMS ]->(:EVENT{uid: %d})\n" n (Shortcuts.find_exn s))
+    let good = List.filter_mapi ri_conforms ~f:(fun i s ->
+      if s<>""
+      then Some(sprintf "MATCH (dest%d:EVENT{uid: %d}) CREATE i%d-[:CONFORMS ]->dest%d\n" i (Shortcuts.find_exn s) n i)
       else None
     )  in
     String.concat ~sep:"\n" (cre :: bad @ good)

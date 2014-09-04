@@ -45,6 +45,9 @@ module List = struct
   let map ~f xs = List.map f xs
   let filter_map ~f xs =
     fold_left ~init:[] ~f:(fun acc x -> match f x with Some y -> y::acc | None -> acc) xs
+  let filter_mapi ~f xs =
+    let i = ref 0 in
+    filter_map xs ~f:(fun x -> let ans = f !i x in incr i; ans)
 
   let concat_strings ~sep ~f xs =
     let b = Buffer.create 100 in
