@@ -27,7 +27,7 @@ let initdb_rpc : (unit,unit) Eliom_pervasives.server_function
   = server_function Json.t<unit> Db.create_db
 
 let generate_comments_div _ : Types.event list Lwt.t =
-  lwt xs = Db.get_events 111 in
+  lwt xs = Db.get_events 111. in
   Lwt.return []
 
 let get_events_rpc
@@ -42,7 +42,7 @@ let get_last_event_rpc
   let get_last_events () : dbevent_js Js.t list Lwt.t =
     (*let ts = ODate.Unix.now_milliseconds () |> int_of_float in*)
     let ts = (jsnew Js.date_now ())##valueOf () in
-    lwt s = %get_last_event_rpc (int_of_float ts) in
+    lwt s = %get_last_event_rpc ts in
     Lwt.return (Array.to_list @@ Js.to_array @@ Json.unsafe_input @@ Js.string s)
 
 }}

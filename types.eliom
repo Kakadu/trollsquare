@@ -1,6 +1,6 @@
 {shared{
 
-type timestamp = int deriving (Json)
+type timestamp = float deriving (Json)
 type id = int deriving (Json)
 
 type event = {

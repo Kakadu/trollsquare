@@ -27,7 +27,7 @@ let hide () = List.iter JQ.Sel.hide [".main-timeline"]
 
 let get_last_events () : dbevent_js Js.t list Lwt.t =
   let ts = (jsnew Js.date_now ())##valueOf () in
-  lwt s = %get_last_events_rpc (int_of_float ts) in
+  lwt s = %get_last_events_rpc ts in
   Lwt.return (Array.to_list @@ Js.to_array @@ Json.unsafe_input @@ Js.string s)
 
 let clear () =

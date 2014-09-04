@@ -7,6 +7,7 @@ open CalendarLib
 open Types
 
 module API = Neorest.Make(struct let server="localhost" let port=7474 end)
+type shortcut = string
 module StringMap = Map.Make(String)
 
 module Shortcuts = struct
@@ -14,6 +15,21 @@ module Shortcuts = struct
   let add ~key v = Ref.replace shortcut_map ~f:(StringMap.add key v)
   let find_exn k = StringMap.find k !shortcut_map
   let iter f = StringMap.iter f !shortcut_map
+
+  let mh17crash = "mh17crash"
+  let mh17_nsto_machinegun = "mh17_nsto_machinegun"
+  let mh17_morf_breifing = "mh17_morf_breifing"
+  let stepasyuk1 = "stepasyuk1"
+
+  let paratroopers_ukr = "paratroopers_ukr"
+  let paratroopers_ukr_kremlin = "paratroopers_ukr_kremlin"
+
+  let pskov_paratroopers_buried  = "pskov_paratroopers_buried"
+  let pskov_paratroopers_kremlin = "pskov_paratroopers_kremlin"
+  let pskov_paratroopers_callback = "pskov_paratroopers_callback"
+  let pskov_paratroopers_jours_beaten = "pskov_paratroopers_jours_beaten"
+  let pskov_paratroopers_call_to_wife = "pskov_paratroopers_call_to_wife"
+
 end
 
 let maybe_error = function
@@ -28,7 +44,7 @@ let make_nodes ?(verbose=false) events =
 
   let has_date ts =
     let cmd = "OPTIONAL MATCH (d:DAY) WHERE d.timestamp={ts} RETURN id(d)" in
-    let params = [ "ts", `Int ts ] in
+    let params = [ "ts", `Float ts ] in
     API.wrap_cypher ~verbose cmd ~params ~f:(function
     | `List [ `List [`Int id ] ] -> OK (Some id)
     | `List [ `List [`Null   ] ] -> OK None
@@ -39,11 +55,11 @@ let make_nodes ?(verbose=false) events =
     let cmd = "MATCH (e:DAY) WHERE e.timestamp < {ts}
                RETURN e.timestamp,id(e) ORDER BY e.timestamp DESC LIMIT 1"
     in
-    let params = [ "ts", `Int ts ] in
+    let params = [ "ts", `Float ts ] in
     API.wrap_cypher ~verbose cmd ~params ~f:(function
     | `List[]  -> OK None
     | `List xs when List.length xs > 1  -> Error "Too many results"
-    | `List[`List[ `Int _ts; `Int id] ] ->  OK (Some (_ts,id) )
+    | `List[`List[ `Float _ts; `Int id] ] ->  OK (Some (_ts,id) )
     | _ -> Error "Wrong format"
     )
   in
@@ -52,17 +68,17 @@ let make_nodes ?(verbose=false) events =
                RETURN e.timestamp,id(e) ORDER BY e.timestamp LIMIT 1
                "
     in
-    let params = [ "ts", `Int ts ] in
+    let params = [ "ts", `Float ts ] in
     API.wrap_cypher ~verbose cmd ~params ~f:(function
     | `List[]  -> OK None
     | `List xs when List.length xs > 1  -> Error "Too many results"
-    | `List[`List[ `Int _ts; `Int id] ] ->  OK (Some (_ts,id) )
+    | `List[`List[ `Float _ts; `Int id] ] ->  OK (Some (_ts,id) )
     | _ -> Error "Wrong format"
     )
   in
   let create_day ts =
-    let desc = ts |> float_of_int |> Calendar.from_unixfloat |> Calendar.to_date |> Printer.Date.to_string in
-    let params = [ ("ts", `Int ts); ("desc", `String desc) ] in
+    let desc = ts |> Calendar.from_unixfloat |> Calendar.to_date |> Printer.Date.to_string in
+    let params = [ ("ts", `Float ts); ("desc", `String desc) ] in
     let cmd = "MERGE (ans:DAY{ timestamp: {ts}, desc: {desc} }) RETURN id(ans)" in
     API.wrap_cypher cmd ~params ~f:(function
     | `List[ `List[ `Int id ] ] -> OK id
@@ -81,7 +97,7 @@ let make_nodes ?(verbose=false) events =
                  ; ("title", `String e.e_title)
                  ; ("shortcut", `String e.e_shortcut)
                  (*; ("eventid", `Int innerid) *)
-                 ; ("ts",   `Int e.e_timestamp)
+                 ; ("ts",   `Float e.e_timestamp)
                  ] in
     let cmd = "MERGE (id:UniqueId{name:'event'})
                ON CREATE SET id.count = 1
@@ -97,7 +113,7 @@ let make_nodes ?(verbose=false) events =
     )
   in
   let f = fun n ({e_desc; e_timestamp; e_title; e_shortcut; _} as event) ->
-    let day_ts = Calendar.(to_date @@ from_unixfloat @@ float_of_int e_timestamp) |> Date.to_unixfloat |> int_of_float in
+    let day_ts = Calendar.(to_date @@ from_unixfloat e_timestamp) |> Date.to_unixfloat in
     (*printf  "%s\n%d\n%!" e_title day_ts;*)
     let day_node_id : (int,_) result =
       has_date day_ts >>= function
@@ -144,9 +160,9 @@ let make_nodes ?(verbose=false) events =
 
 type raw_interp =
   { ri_text: string
-  ; ri_shortcut: string
-  ; ri_conflicts: string list
-  ; ri_conforms:  string list
+  ; ri_shortcut:  shortcut
+  ; ri_conflicts: shortcut list
+  ; ri_conforms:  shortcut list
   }
 
 type raw_question = string * raw_interp list
@@ -166,11 +182,21 @@ let create_question ~parent ~title is =
              CREATE e-[:HAS_QUESTION]->(q:QUESTION{text: {qtext}})
              "
   in
-  let f {ri_text; ri_shortcut; _} =
-    sprintf "CREATE q-[:HAS_INTERPRET]->(:INTERPRET{ text: \"%s\", shortcut: \"%s\" }) "
-            ri_text ri_shortcut
+  let f n { ri_text; ri_shortcut; ri_conflicts; ri_conforms } =
+    let cre = sprintf "CREATE q-[:HAS_INTERPRET]->(i%d:INTERPRET{ text: \"%s\", shortcut: \"%s\" })"
+                      n ri_text ri_shortcut
+    in
+    let bad  = List.filter_map ri_conflicts ~f:(fun s ->
+      if s<>"" then Some(sprintf "CREATE i%d-[:CONFLICTS]->(:EVENT{uid: %d})\n" n (Shortcuts.find_exn s))
+      else None
+    )  in
+    let good = List.filter_map ri_conforms ~f:(fun s ->
+      if s<>"" then Some(sprintf "CREATE i%d-[:CONFORMS ]->(:EVENT{uid: %d})\n" n (Shortcuts.find_exn s))
+      else None
+    )  in
+    String.concat ~sep:"\n" (cre :: bad @ good)
   in
-  let tail = String.concat ~sep:" " @@ List.map ~f is in
+  let tail = String.concat ~sep:" " @@ List.mapi ~f is in
   let cmd = String.concat ~sep:" " [cmd; tail; " RETURN uid_"] in
   API.wrap_cypher cmd ~params ~f:(function
       | `List [`List [`Int uid]] -> OK uid
@@ -178,31 +204,47 @@ let create_question ~parent ~title is =
     )
 
 let all_questions : (string * string * raw_interp list) list =
-  let i ?(shortcut="") ri_text = { ri_text; ri_shortcut=shortcut; ri_conflicts=[]; ri_conforms=[] } in
+  let i ?(shortcut="") ?(g=[]) ?(b=[]) ri_text = { ri_text; ri_shortcut=shortcut; ri_conflicts=b; ri_conforms=g } in
   let make text parent is = (text,parent,is) in
-  [ make "Who have destroyed MM17?" "mh17crash" [i "Putin"; i "Separatists"; i "Ukrainian air forces"; i "Technical problem"]
+  let open Shortcuts in
+  [ make "Who have destroyed MM17?" mh17crash
+         [ i "Putin. Persanally."
+         ; i ~g:[stepasyuk1] "Separatists using SA11 Gadfly"
+         ; i "Ukrainian air forces using SA11 Gadfly"
+         ; i ~g:[mh17_nsto_machinegun] "Ukrainian air forces using basically strike aircraft (maybe with SA11 Gadfly)"
+         ; i "Technical problem"
+         ; i "Liquid termnators"
+         ]
+  ; make "What they were doing there?" paratroopers_ukr
+         [ i "Russian regular army is fighting against Ukraine"
+         ; i "By mistake"
+         ; i "Fake" ]
+  ; make "Did they died in fighting against Ukraine?" pskov_paratroopers_buried
+         [ i "Yes, Russia is invading Ukraine"
+         ; i "No, somewhere else"
+         ; i "It's fake: they are not dead"
+         ]
   ]
 
 let make_questions () =
   print_endline "Creating questions...";
   List.fold_left ~init:(OK 1) all_questions
                  ~f:(fun acc (title,parent,is) -> acc >>= fun _ -> create_question ~parent ~title is)
-  >>= fun _id -> OK ()
+  >>= fun _id ->  OK ()
 
 let events =
   (* TODO maybe add variable with level of fakeness *)
   let open Calendar in
-  let ts yy mm dd hh mi ss =
-    Calendar.(make yy mm dd hh mi ss |> to_unixfloat |> int_of_float)
-  in
-  let make ?(desc="") ?(shortcut="") ?(url="") ~ts title =
+  let ts yy mm dd hh mi ss = Calendar.(make yy mm dd hh mi ss |> to_unixfloat) in
+  let make ?(desc="") ?(shortcut="") ?(url="") ~ts e_title =
     { e_timestamp = ts
-    ; e_title = title
+    ; e_title
     ; e_desc = desc
     ; e_url =  url
     ; e_shortcut = shortcut
     }
   in
+  let open Shortcuts in
   [ make ~ts:(ts 2014 07 17 19 02 00)
          ~url:"http://anti-maidan.com/index.php?p=news&id=3957"
          "Ukraine relocates SA-17 Grizzly to Ukrainian-Russian border"
@@ -223,7 +265,7 @@ let events =
          "Flightradar24: before its dissappearing Boeing was located near city of Kremenchug"
   ; make ~ts:(ts 2014 07 17 23 20 00)
          ~url: "http://anti-maidan.com/index.php?p=news&id=3967"
-         "CNN: Are separatists able to destrot Boeing?"
+         "CNN: Are separatists able to destroy Boeing?"
   ; make ~ts:(ts 2014 07 18 00 13 00)
          ~url: "http://anti-maidan.com/index.php?p=news&id=3971"
          "V.Putin accuses Ukraine in Boeing catastophe"
@@ -279,13 +321,17 @@ let events =
          "Experts from Netherlands arrive to city of Torez"
   ; make ~ts:(ts 2014 07 21 15 36 00)
          ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4147"
-         "DNR: Arriving of Malaisian experts can be postpones becuase skirmishes at Donetsk"
+         "DNR: Arriving of Malaisian experts can be postponed becuase skirmishes at Donetsk"
+
   ; make ~ts:(ts 2014 07 21 17 24 00)
-         ~url: "http://anti-maidan.com/index.php?p=news&id=4149"
+         ~shortcut: Shortcuts.mh17_morf_breifing
+         ~url:"http://anti-maidan.com/index.php?p=news&id=4149"
          "Breifing of Ministry of Defense of Russia"
+
   ; make ~ts:(ts 2014 07 21 17 24 00)
          ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4157"
          "Congressman: The crash of MH17 is a result of US's support of Maidan"
+(*
   ; make ~ts:(ts 2014 07 21 18 23 00)
          ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4160"
          "B.Obama comments situation in the Ukraine"
@@ -298,90 +344,108 @@ let events =
   ; make ~ts:(ts 2014 07 21 22 59 00)
          ~url: "Http://Anti-Maidan.Com/index.php?p=news&cat=2&id=4174"
          "UN's conference about aircrash0"
+    *)
   ; make ~ts:(ts 2014 07 21 23 09 00)
          ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4179"
          "What US is hiding when they don't show photos from satellite"
+(*
   ; make ~ts:(ts 2014 07 22 01 28 00)
          ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4186"
-         "Plane recorded is transferred to Malaisian delegation"
+         "Plane recordes are transferred to Malaisian delegation"
+ *)
   ; make ~ts:(ts 2014 07 22 09 16 00)
          ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4192"
          "R.Perry: American satellite shows that Boeing was destroyed by Ukrainian military forces"
   ; make ~ts:(ts 2014 07 22 19 00 00)
          ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4216"
-         "The Finantioal Times presents eveidences that MH17 was destroyed by missle "
+         "The Finantinal Times presents eveidences that MH17 was destroyed by missle "
+(*
   ; make ~ts:(ts 2014 07 22 19 20 00)
          ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4217"
-         "US Natianal department uses data from social networks as main source about MH117"
+         "US National department uses data from social networks as main source about MH117"
+ *)
   ; make ~ts:(ts 2014 07 22 23 12 00)
          ~url: "http://stepasyuk.livejournal.com/11192.html"
-         ~shortcut:"stepasyuk1"
+         ~shortcut:Shortcuts.stepasyuk1
          "LJ, stepasyuk: The facts about which Russian Ministry of defense is lying"
   ; make ~ts:(ts 2014 07 23 00  41 00)
          ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4240"
          "US has not eveidences that Russia is connected to Boeing's crash"
+(*
   ; make ~ts:(ts 2014 07 23 04 31 00)
          ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4244"
          "Poll about Boeing on ukrainian news web-site"
+ *)
   ; make ~ts:(ts 2014 07 23 11 31 00)
          ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4251"
-         "Facts presented by US natianal depatment raise questions from journalists"
+         "Facts presented by US national depatment raise questions from journalists"
+(*
   ; make ~ts:(ts 2014 07 23 20 40 00)
          ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4281"
          "OSCE missions: militia have granted full access to all objects of airchrash"
   ; make ~ts:(ts 2014 07 23 21 00 00)
          ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4291"
          "Malaisia accuses US at using MH117 crash in their geopolitical interests"
+ *)
   ; make ~ts:(ts 2014 07 24 05 26 00)
          ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4311"
          "A.Sharij have found SA-11 claimed by ukrainin air forces as Russian."
   ; make ~ts:(ts 2014 07 24 05 51 00)
          ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4317"
-         "Ukraine will not give out recorders between air traffic controllers and MH117"
+         "Ukraine will not give out recorders between air traffic controllers and MH17"
+(*
   ; make ~ts:(ts 2014 07 24 08 50 00)
          ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4323"
          "IKAO: Flyght recorder of speech is in good shape "
+ *)
   ; make ~ts:(ts 2014 07 24 20 00 00)
          ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4329"
-         "Rusian Ministry of Defense: all connects between crash of MH117 and militia are based on information from social networks "
+         "Russian Ministry of Defense: all connects between crash of MH117 and militia are based on information from social networks "
+
+  ; make ~ts:(ts 2014 08 07 11 05 00)
+         ~url:"http://www.nst.com.my/node/20961?d=1"
+         ~shortcut: mh17_nsto_machinegun
+         "MH17: Pockmarks look like from very, very heavy machine gun fire, says first OSCE monitor on-scene"
 
   ; make ~ts:(ts 2014 08 26 07 56 00)
          ~url:"http://lenta.ru/news/2014/08/26/sbu/"
-         ~shortcut:"paratroopers_ukr"
+         ~shortcut: Shortcuts.paratroopers_ukr
          "Ukraine spotted a number of Russian paratroopers on their territory"
 
   ; make ~ts:(ts 2014 08 26 18 25 00)
          ~url:"http://lenta.ru/news/2014/08/26/minobr/"
+         ~shortcut: Shortcuts.paratroopers_ukr_kremlin
          "Russian Ministry of defense have explained paratroopers on ukranian territory"
-
-  ; make ~ts:(ts 2014 08 25 21 52 00)
-         ~url:"http://www.newsru.com/russia/25aug2014/pskov.html"
-         ~shortcut:"pskov_paratroopers_buried"
-         "A few paratroopers a buried near city of Pskov. Journalists said that they were fighting in the Ukraine."
-
-  ; make ~ts:(ts 2014 08 25 21 52 00)
-         ~url:"http://www.snob.ru/selected/entry/80262?preview=print"
-         ~shortcut:"pskov_paratroopers_kremlin"
-         "The Kremlin have explained the funeral of paratroopers in Pskov"
-
-  ; make ~ts:(ts 2014 08 26 18 18 00)
-         ~url:"http://inforesist.org/na-kladbishhe-gde-poxoronili-pskovskix-desantov-izbili-zhurnalistov/"
-         "The journalists were beaten near the cemetery where paratroopers were buried."
-
-  ; make ~ts:(ts 2014 08 27 11 11 11)
-         ~url:"http://www.politonline.ru/?area=rssArticleItem&id=22481088&mode=print"
-         ~shortcut:"pskov_paratroopers_callback"
-         "Quazi-killed paratroopers are calling home."
-
-  ; make ~ts:(ts 2014 08 27 15 15 15)
-         ~url:""
-         ~shortcut:"pskov_paratroopers_call_to_wife"
-         "The wife of paratrooper says that he is at home and not dead."
 
   ; make ~ts:(ts 2014 08 31 00 45 00)
          ~url:"http://lenta.ru/news/2014/08/31/freedom/"
          ~shortcut:"paratroopers_ukr_back"
          "The paratroopers catched in the Ukraine have returned home."
+
+  ; make ~ts:(ts 2014 08 25 21 52 00)
+         ~url:"http://www.newsru.com/russia/25aug2014/pskov.html"
+         ~shortcut: Shortcuts.pskov_paratroopers_buried
+         "A few paratroopers a buried near city of Pskov. Journalists said that they were fighting in the Ukraine."
+
+  ; make ~ts:(ts 2014 08 25 21 52 00)
+         ~url:"http://www.snob.ru/selected/entry/80262?preview=print"
+         ~shortcut: Shortcuts.pskov_paratroopers_kremlin
+         "The Kremlin have explained the funeral of paratroopers in Pskov"
+
+  ; make ~ts:(ts 2014 08 26 18 18 00)
+         ~url:"http://inforesist.org/na-kladbishhe-gde-poxoronili-pskovskix-desantov-izbili-zhurnalistov/"
+         ~shortcut: Shortcuts.pskov_paratroopers_jours_beaten
+         "The journalists were beaten near the cemetery where paratroopers were buried."
+
+  ; make ~ts:(ts 2014 08 27 11 11 11)
+         ~url:"http://www.politonline.ru/?area=rssArticleItem&id=22481088&mode=print"
+         ~shortcut: Shortcuts.pskov_paratroopers_callback
+         "Quazi-killed paratroopers are calling home."
+
+  ; make ~ts:(ts 2014 08 27 15 15 15)
+         ~url:""
+         ~shortcut:Shortcuts.pskov_paratroopers_call_to_wife
+         "The wife of paratrooper says that he is at home and not dead."
 
   ]
 
