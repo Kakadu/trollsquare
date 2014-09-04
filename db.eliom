@@ -12,9 +12,13 @@ module StringMap = Map.Make(String)
 module Shortcuts = struct
   let shortcut_map : Types.id StringMap.t ref = ref StringMap.empty
   let add ~key v = Ref.replace shortcut_map ~f:(StringMap.add key v)
-  let get_exn k = StringMap.find k !shortcut_map
-
+  let find_exn k = StringMap.find k !shortcut_map
+  let iter f = StringMap.iter f !shortcut_map
 end
+
+let maybe_error = function
+  | OK () -> ()
+  | Error s -> fprintf stderr "%s\n%!" s
 
 let make_nodes ?(verbose=false) events =
   let () = match API.remove_all () with
@@ -75,6 +79,7 @@ let make_nodes ?(verbose=false) events =
   let create_event ~parentid _innerid e : (Types.id, string) Result.t =
     let params = [ ("parentid", `Int parentid)
                  ; ("title", `String e.e_title)
+                 ; ("shortcut", `String e.e_shortcut)
                  (*; ("eventid", `Int innerid) *)
                  ; ("ts",   `Int e.e_timestamp)
                  ] in
@@ -84,11 +89,11 @@ let make_nodes ?(verbose=false) events =
                WITH id.count AS uid_
                START day=node({parentid})
                CREATE day-[:HAS_EVENT]->(e:EVENT{title: {title}, timestamp: {ts}, uid: uid_ })
-               RETURN id(e)
+               RETURN e.uid
               " in
     API.wrap_cypher cmd ~params ~f:(function
-      | `List [`Int uid] -> OK uid
-      | _  -> Error "wrong cypher format"
+      | `List [ `List [`Int uid] ] -> OK uid
+      | _  -> Error "Wrong cypher format while creating event"
     )
   in
   let f = fun n ({e_desc; e_timestamp; e_title; e_shortcut; _} as event) ->
@@ -126,15 +131,16 @@ let make_nodes ?(verbose=false) events =
         OK id
     in
 
-    let (_ : (_,_) result) = day_node_id >>= fun day_node_id ->
+    day_node_id >>= fun day_node_id ->
       (*printf "day_node_id=%d\n%!" day_node_id;*)
-      create_event ~parentid:day_node_id n event >>= fun uid ->
-      if e_shortcut <> "" then  Shortcuts.add e_shortcut uid;
-      OK ()
-    in
-    ()
+    create_event ~parentid:day_node_id n event >>= fun uid -> begin
+        printf "Event '%s' created%!" e_title;
+        if e_shortcut <> "" then ( print_endline "ADDING!!!"; Shortcuts.add e_shortcut uid );
+        OK ()
+    end
   in
-  List.iteri events ~f
+  let i = ref 0 in
+  List.fold_left events ~init:(OK ()) ~f:(fun acc x -> acc >>= fun () -> incr i;  (f !i x) )
 
 type raw_interp =
   { ri_text: string
@@ -145,29 +151,43 @@ type raw_interp =
 
 type raw_question = string * raw_interp list
 let create_question ~parent ~title is =
-  let parent_shortcut = parent in
+  Shortcuts.iter (fun k v -> printf "%s -> %d\n%!" k v);
+  let parent_uid = Shortcuts.find_exn parent in
   let params =
-    [ "parent", `String parent
+    [ "parent", `Int parent_uid
+    ; "qtext",  `String title
     ]
   in
   let cmd = "MERGE (id:UniqueId{name:'event'})
              ON CREATE SET id.count = 1
              ON MATCH SET id.count = id.count + 1
              WITH id.count AS uid_
-             START (e:EVENT{shortcut: {parent}})
+             MATCH (e:EVENT{uid: {parent}})
              CREATE e-[:HAS_QUESTION]->(q:QUESTION{text: {qtext}})
              "
   in
   let f {ri_text; ri_shortcut; _} =
-    sprintf "CREATE q-[:HAS_INTERPRET]->(:INTERPRET{ text: \"%s\"; shortcut: \"%s\" }) "
+    sprintf "CREATE q-[:HAS_INTERPRET]->(:INTERPRET{ text: \"%s\", shortcut: \"%s\" }) "
             ri_text ri_shortcut
   in
   let tail = String.concat ~sep:" " @@ List.map ~f is in
   let cmd = String.concat ~sep:" " [cmd; tail; " RETURN uid_"] in
   API.wrap_cypher cmd ~params ~f:(function
-      | `List [`Int uid] -> OK uid
-      | _  -> Error "wrong cypher format"
+      | `List [`List [`Int uid]] -> OK uid
+      | _  -> Error "Wrong cypher format while creating a question"
     )
+
+let all_questions : (string * string * raw_interp list) list =
+  let i ?(shortcut="") ri_text = { ri_text; ri_shortcut=shortcut; ri_conflicts=[]; ri_conforms=[] } in
+  let make text parent is = (text,parent,is) in
+  [ make "Who have destroyed MM17?" "mh17crash" [i "Putin"; i "Separatists"; i "Ukrainian air forces"; i "Technical problem"]
+  ]
+
+let make_questions () =
+  print_endline "Creating questions...";
+  List.fold_left ~init:(OK 1) all_questions
+                 ~f:(fun acc (title,parent,is) -> acc >>= fun _ -> create_question ~parent ~title is)
+  >>= fun _id -> OK ()
 
 let events =
   (* TODO maybe add variable with level of fakeness *)
@@ -185,10 +205,11 @@ let events =
   in
   [ make ~ts:(ts 2014 07 17 19 02 00)
          ~url:"http://anti-maidan.com/index.php?p=news&id=3957"
-         ~shortcut:"mh17crash"
          "Ukraine relocates SA-17 Grizzly to Ukrainian-Russian border"
 
   ; make ~ts:(ts 2014 07 17 20 00 00)
+         ~url:""
+         ~shortcut:"mh17crash"
          "Boeing 777 of Malaisia airlaines crashes near Ukrainian-Russian border"
 
   ; make ~ts:(ts 2014 07 17 22 00 00)
@@ -269,8 +290,8 @@ let events =
          ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4160"
          "B.Obama comments situation in the Ukraine"
   ; make ~ts:(ts 2014 07 21 18 36 00)
-    "Press conference of Malaisian prime minister"
-    ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4168"
+         ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4168"
+         "Press conference of Malaisian prime minister"
   ; make ~ts:(ts 2014 07 21 20 30 00)
          ~url: "http://anti-maidan.com/index.php?p=news&cat=2&id=4171"
          "Pentagon doesn't beleive MD of Russia"
@@ -365,17 +386,9 @@ let events =
   ]
 
 let create_db () : unit Lwt.t =
-  Lwt.return @@ make_nodes events
-(*
-let event_of_json = function
-  | `Assoc xs ->
-     let e_desc = List.Assoc.find_exn xs "desc" |> YoUtil.drop_string in
-     let e_timestamp = List.Assoc.find_exn xs "timestamp" |> YoUtil.drop_int in
-     let e_title = List.Assoc.find xs "title" |> Option.value ~default:"" ~f:YoUtil.drop_string in
-     let e_url   = List.Assoc.find xs "url" |> Option.value ~default:"" ~f:YoUtil.drop_string in
-     Types.({e_desc; e_timestamp; e_title; e_url})
-  | _ -> assert false
- *)
+  let r = make_nodes events >>= fun () -> make_questions () in
+  maybe_error r;
+  Lwt.return ()
 
 let get_events (_:Types.timestamp) : string Lwt.t =
   print_endline "db.get_events";
