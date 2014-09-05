@@ -4,6 +4,9 @@
 let get_event_by_uid_rpc
     : (int, string) Eliom_pervasives.server_function
   = server_function Json.t<int> Db.event_by_uid
+let get_questions_by_euid_rpc
+    : (int, string) Eliom_pervasives.server_function
+  = server_function Json.t<int> Db.questions_by_event_uid
 
 
 }}
@@ -79,6 +82,8 @@ let _onModeChanged =
        Lwt.ignore_result begin
            lwt s = %get_event_by_uid_rpc id in
            console##log (Js.string s);
+           lwt s2 = %get_questions_by_euid_rpc id in
+           console##log (Js.string s2);
            let o = Json.unsafe_input @@ Js.string s in
            console##log (o);
            draw_event o;

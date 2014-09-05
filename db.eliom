@@ -177,7 +177,7 @@ type raw_interp =
 
 type raw_question = string * raw_interp list
 let create_question ~parent ~title is =
-  Shortcuts.iter (fun k v -> printf "%s -> %d\n%!" k v);
+  (*Shortcuts.iter (fun k v -> printf "%s -> %d\n%!" k v);*)
   let parent_uid = Shortcuts.find_exn parent in
   let params =
     [ "parent", `Int parent_uid
@@ -206,15 +206,23 @@ let create_question ~parent ~title is =
 
     let s3 = List.mapi ri_conflicts ~f:(fun i _ -> sprintf "i-[:CONFLICTS]->x%d" i) in
     let s4 = List.mapi ri_conforms  ~f:(fun i _ -> sprintf "i-[:CONFORMS ]->y%d" i) in
-    let bodies = String.concat ~sep:", " ("CREATE q-[:HAS_INTERPRET]->(i:INTERPRET{text: {itext}})" :: s3 @ s4) in
+    let conn_str = "q-[:HAS_INTERPRET]->(i:INTERPRET{text: {itext}, uid: uid_})" in
 
+    let bodies = String.concat ~sep:", " (conn_str :: s3 @ s4) in
+
+    let cmd = sprintf "MERGE (id:UniqueId{name: 'interpret'})
+                       ON CREATE SET id.count = 1
+                       ON MATCH SET id.count = id.count + 1
+                       WITH id.count AS uid_
+                       MATCH %s CREATE %s"
+                      match_str bodies
+    in
     let params = [ "quid", `Int quid
                  ; "itext", `String ri_text
                  ]
     in
-    let cmd = sprintf "MATCH %s\n%s\nRETURN 1" match_str bodies in
-    API.wrap_cypher ~verbose:false cmd ~params ~f:(function
-      | `List [`List [`Int _]] -> OK ()
+    API.wrap_cypher ~verbose:true cmd ~params ~f:(function
+      | `List [] -> OK ()
       | _  -> Error "Wrong cypher format while creating an interpretation"
     )
   )
@@ -223,8 +231,8 @@ let all_questions : (string * string * raw_interp list) list =
   let i ?(shortcut="") ?(g=[]) ?(b=[]) ri_text = { ri_text; ri_shortcut=shortcut; ri_conflicts=b; ri_conforms=g } in
   let make text parent is = (text,parent,is) in
   let open Shortcuts in
-  [ make "Who have destroyed MM17?" mh17crash
-         [ i "Putin. Persanally."
+  [ make "Who have destroyed MH17?" mh17crash
+         [ i "Putin. Personally."
          ; i ~g:[stepasyuk1] "Separatists using SA11 Gadfly"
          ; i "Ukrainian air forces using SA11 Gadfly"
          ; i ~g:[mh17_nsto_machinegun] "Ukrainian air forces using basically strike aircraft (maybe with SA11 Gadfly)"
@@ -238,8 +246,10 @@ let all_questions : (string * string * raw_interp list) list =
   ; make "Did they died in fighting against Ukraine?" pskov_paratroopers_buried
          [ i "Yes, Russia is invading Ukraine"
          ; i "No, somewhere else"
-         ; i "It's fake: they are not dead"
          ]
+  ; make "Is it a fake?" pskov_paratroopers_buried
+         [ i ~g:[pskov_paratroopers_callback; pskov_paratroopers_call_to_wife] "Yes"
+         ; i "No" ]
   ]
 
 let make_questions () =
@@ -504,5 +514,14 @@ let event_by_uid uid : string Lwt.t =
   in
   let j3 = List.map j2 ~f:(fun x -> x |> drop_assoc |> List.assoc "row" |> drop_list |> List.hd ) in
   Lwt.return @@ Yojson.to_string @@ List.hd j3
+
+
+let questions_by_event_uid eventuid =
+  let cmd = "MATCH (e:EVENT{uid: {uid}}), e-[:HAS_QUESTION]->q, q-[:HAS_INTERPRET]->interprets
+             WITH e AS e, q as q, [i IN COLLECT(interprets) | {itext: i.text, iuid: i.uid}] AS ii
+             RETURN { qtext: q.text, quid: q.uid, interprets: ii } AS qwe"
+  in
+  let params = [ "uid", `Int eventuid ] in
+  Lwt.return @@ Yojson.to_string @@ `List (API.commit ~verbose:true ~params cmd)
 
 }}

@@ -106,6 +106,20 @@ let make_n_commit ?(verbose=false) cmd ~params =
   pipeline#run ();
   req#get_resp_body ()
 
+let commit ?(verbose=false) cmd ~params =
+  let s = make_n_commit ~verbose cmd ~params in
+  if verbose then print_endline s;
+  let j1 = to_json s in
+  try
+    let open YoUtil in
+    let j2 = j1 |> drop_assoc |> List.assoc "results" |> drop_list |> List.hd
+                |> drop_assoc  |> List.assoc "data" |> drop_list in
+    List.map j2 ~f:(fun x -> x |> drop_assoc |> List.assoc "row" |> drop_list |> List.hd)
+  with exn -> failwith "Some error or wrong cypher result format in Neorest.commit"
+
+
+
+
 let post_cypher ?(verbose=false) ?(params=[]) cypher =
   let url = sprintf "http://%s:%d/db/data/cypher" Cfg.server Cfg.port in
   let pipeline = new Http_client.pipeline in
