@@ -522,6 +522,11 @@ let questions_by_event_uid eventuid =
              RETURN { qtext: q.text, quid: q.uid, interprets: ii } AS qwe"
   in
   let params = [ "uid", `Int eventuid ] in
-  Lwt.return @@ Yojson.to_string @@ `List (API.commit ~verbose:true ~params cmd)
+  Lwt.return @@ Yojson.to_string @@ `List (API.commit ~params cmd)
+
+let interpret_info iuid =
+  let cmd = "MATCH (i:INTERPRET{uid: {uid}}), i-[:CONFORMS]->e RETURN e" in
+  let params = [ "uid", `Int iuid ] in
+  Lwt.return @@ Yojson.to_string @@ `List (API.commit ~params cmd)
 
 }}

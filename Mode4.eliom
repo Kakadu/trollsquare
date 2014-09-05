@@ -8,6 +8,10 @@ let get_questions_by_euid_rpc
     : (int, string) Eliom_pervasives.server_function
   = server_function Json.t<int> Db.questions_by_event_uid
 
+let get_interpret_conforms_rpc
+    : (int, string) Eliom_pervasives.server_function
+  = server_function Json.t<int> Db.interpret_info
+
 
 }}
 
@@ -34,6 +38,10 @@ let clear () =
                         ignore @@ JQ.clear el ;
                         (*console##log (el);*)
                        )
+let draw_questions (qs: Jstypes.dbquestion_js Js.t Js.js_array Js.t) =
+  let qs =
+  let () = qs##reduceRight_init (fun _ _ _ _ -> (), ()) in
+  ()
 
 let draw_event (ev: Jstypes.dbevent_js Js.t) =
   let open Eliom_content.Html5.D in
@@ -66,11 +74,9 @@ let _onModeChanged =
         Lochash.set_mode Common.Mode4;
         List.iter JQ.Sel.show classes
       end else begin
-        (*console##log (Js.string "turn Mode4 off");*)
         List.iter JQ.Sel.hide classes;
         clear ();
         Lochash.remove_value @@ Js.string "uid";
-        (*console##log_2 (Js.string "hash = " , Lochash.to_jsstring ());*)
       end
   in
   let f new_mode =
@@ -82,33 +88,28 @@ let _onModeChanged =
        Lwt.ignore_result begin
            lwt s = %get_event_by_uid_rpc id in
            console##log (Js.string s);
+           let o = Json.unsafe_input @@ Js.string s in
+           draw_event o;
            lwt s2 = %get_questions_by_euid_rpc id in
            console##log (Js.string s2);
-           let o = Json.unsafe_input @@ Js.string s in
-           console##log (o);
-           draw_event o;
+           draw_questions (Json.unsafe_input @@ Js.string s2);
            Lwt.return ()
          end;
-    (*
-    (lwt events = get_last_events () in
-     let nodes = List.map ~f:make_node_for_event events in
-     let parent = (Ojquery.jQelt @@ Ojquery.js_jQ ".main-events-list") in
-     List.iter nodes ~f:(fun e -> JQ.append_element (To_dom.of_element e) parent);
-     Lwt.return ()
-    ) |>  Lwt.ignore_result; *)
     ()
   in
   React.E.map f Common.switch_mode_event
 
 let _onShowNode =
   let f (ev: Jstypes.dbevent_js Js.t option) =
-    if Option.is_some ev then
+    if Option.is_none ev then Lwt.return ()
+    else
     let ev = Option.get_exn ev in
-    console##log (Js.string @@ sprintf "Showing event '%s'" (ev##title) );
     draw_event ev;
-    ()
+    lwt s2 = %get_questions_by_euid_rpc ev##uid in
+    draw_questions (Json.unsafe_input @@ Js.string s2);
+    Lwt.return ()
   in
-  React.S.map f Common.show_node_event
+  React.S.map (fun o -> Lwt.ignore_result @@ f o) Common.show_node_event
 
 (*
 let do_show id =
