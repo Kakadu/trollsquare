@@ -174,36 +174,40 @@ let create_question ~parent ~title is =
     ; "qtext",  `String title
     ]
   in
-  let cmd = "MERGE (id:UniqueId{name:'event'})
+  let cmd = "MERGE (id:UniqueId{name: 'question'})
              ON CREATE SET id.count = 1
              ON MATCH SET id.count = id.count + 1
              WITH id.count AS uid_
              MATCH (e:EVENT{uid: {parent}})
-             CREATE e-[:HAS_QUESTION]->(q:QUESTION{text: {qtext}})
-             "
+             CREATE e-[:HAS_QUESTION]->(q:QUESTION{text: {qtext}, uid: uid_})
+             RETURN uid_"
   in
-  let f n { ri_text; ri_shortcut; ri_conflicts; ri_conforms } =
-    let cre = sprintf "CREATE q-[:HAS_INTERPRET]->(i%d:INTERPRET{ text: \"%s\", shortcut: \"%s\" })"
-                      n ri_text ri_shortcut
-    in
-    let bad  = List.filter_mapi ri_conflicts ~f:(fun i s ->
-      if s<>""
-      then Some(sprintf "MATCH (dest%d:EVENT{uid: %d}) CREATE i%d-[:CONFLICTS]->dest%d\n" i (Shortcuts.find_exn s) n i)
-      else None
-    )  in
-    let good = List.filter_mapi ri_conforms ~f:(fun i s ->
-      if s<>""
-      then Some(sprintf "MATCH (dest%d:EVENT{uid: %d}) CREATE i%d-[:CONFORMS ]->dest%d\n" i (Shortcuts.find_exn s) n i)
-      else None
-    )  in
-    String.concat ~sep:"\n" (cre :: bad @ good)
-  in
-  let tail = String.concat ~sep:" " @@ List.mapi ~f is in
-  let cmd = String.concat ~sep:" " [cmd; tail; " RETURN uid_"] in
-  API.wrap_cypher cmd ~params ~f:(function
+  let q_res = API.wrap_cypher cmd ~params ~f:(function
       | `List [`List [`Int uid]] -> OK uid
       | _  -> Error "Wrong cypher format while creating a question"
     )
+  in
+
+  q_res >>= fun quid ->
+  List.fold_left is ~init:(OK()) ~f:(fun acc { ri_text; ri_shortcut; ri_conflicts; ri_conforms } -> acc >>= fun () ->
+    let s1 = List.mapi ri_conflicts ~f:(fun i sc -> sprintf "(x%d:EVENT{uid: %d})" i (Shortcuts.find_exn sc)) in
+    let s2 = List.mapi ri_conforms  ~f:(fun i sc -> sprintf "(y%d:EVENT{uid: %d})" i (Shortcuts.find_exn sc)) in
+    let match_str = String.concat ~sep:", " ("(q:QUESTION{uid: {quid}})":: s1 @ s2) in
+
+    let s3 = List.mapi ri_conflicts ~f:(fun i _ -> sprintf "i-[:CONFLICTS]->x%d" i) in
+    let s4 = List.mapi ri_conforms  ~f:(fun i _ -> sprintf "i-[:CONFORMS ]->y%d" i) in
+    let bodies = String.concat ~sep:", " ("CREATE q-[:HAS_INTERPRET]->(i:INTERPRET{text: {itext}})" :: s3 @ s4) in
+
+    let params = [ "quid", `Int quid
+                 ; "itext", `String ri_text
+                 ]
+    in
+    let cmd = sprintf "MATCH %s\n%s\nRETURN 1" match_str bodies in
+    API.wrap_cypher cmd ~params ~f:(function
+      | `List [`List [`Int _]] -> OK ()
+      | _  -> Error "Wrong cypher format while creating an interpretation"
+    )
+  )
 
 let all_questions : (string * string * raw_interp list) list =
   let i ?(shortcut="") ?(g=[]) ?(b=[]) ri_text = { ri_text; ri_shortcut=shortcut; ri_conflicts=b; ri_conforms=g } in
@@ -230,7 +234,7 @@ let all_questions : (string * string * raw_interp list) list =
 
 let make_questions () =
   print_endline "Creating questions...";
-  List.fold_left ~init:(OK 1) all_questions
+  List.fold_left ~init:(OK ()) all_questions
                  ~f:(fun acc (title,parent,is) -> acc >>= fun _ -> create_question ~parent ~title is)
   >>= fun _id ->  OK ()
 
