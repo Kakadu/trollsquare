@@ -23,13 +23,13 @@ let classes = [ "."^container_classname ]
 
 let clear () =
   console##log (Js.string "clear ()");
-  List.iter classes ~f:(fun cid ->
-                        console##log (Js.string cid); (*
+  List.iter classes ~f:(fun cid -> (*
+                        console##log (Js.string cid);
                         console##log (Ojquery.js_jQ cid); *)
                         let el = Ojquery.(jQelt @@ js_jQ cid) in
-                        console##log (el);
+                        (*console##log (el);*)
                         ignore @@ JQ.clear el ;
-                        console##log (el);
+                        (*console##log (el);*)
                        )
 
 let draw_event (ev: Jstypes.dbevent_js Js.t) =

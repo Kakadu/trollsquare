@@ -19,6 +19,7 @@ open Jstypes
 open Eliom_content.Html5
 open Eliom_content.Html5.D
 open Types
+open Printf
 
 let show () = List.iter JQ.Sel.show [".main-timeline"]
 let hide () = List.iter JQ.Sel.hide [".main-timeline"]
@@ -26,7 +27,7 @@ let hide () = List.iter JQ.Sel.hide [".main-timeline"]
 (* It is mode 2 *)
 
 let get_last_events () : dbevent_js Js.t list Lwt.t =
-  let ts = (jsnew Js.date_now ())##valueOf () in
+  let ts : float = (jsnew Js.date_now ())##valueOf () in
   lwt s = %get_last_events_rpc ts in
   Lwt.return (Array.to_list @@ Js.to_array @@ Json.unsafe_input @@ Js.string s)
 

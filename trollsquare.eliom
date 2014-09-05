@@ -177,7 +177,7 @@ let main_handler () () =
               ]
         ]
   in
-  let todo_view = div ~a:[a_class Mode3.class_names] [] in
+  let todo_view = div ~a:[a_class [Mode3.container_classname]] [] in
   let mode4_event_view = D.div ~a:[a_class [Mode4.container_classname] ] [] in
   let right_area =
     div ~a:[a_class ["main-right"]] [pcdata "right"]

@@ -37,6 +37,7 @@ let maybe_error = function
   | Error s -> fprintf stderr "%s\n%!" s
 
 let make_nodes ?(verbose=false) events =
+  print_endline "Creating events...";
   let () = match API.remove_all () with
     | OK () -> ()
     | Error () -> fprintf stderr "Can't connect to database"; exit 1
@@ -79,18 +80,26 @@ let make_nodes ?(verbose=false) events =
   let create_day ts =
     let desc = ts |> Calendar.from_unixfloat |> Calendar.to_date |> Printer.Date.to_string in
     let params = [ ("ts", `Float ts); ("desc", `String desc) ] in
-    let cmd = "MERGE (ans:DAY{ timestamp: {ts}, desc: {desc} }) RETURN id(ans)" in
-    API.wrap_cypher cmd ~params ~f:(function
+    let cmd = "//create_day\n
+               MERGE (ans:DAY{ timestamp: {ts}, desc: {desc} }) RETURN id(ans)" in
+    API.wrap_cypher ~verbose cmd ~params ~f:(function
     | `List[ `List[ `Int id ] ] -> OK id
-    | _ -> Error ""
+    | _ -> Error "Wrong cypher result: can't create a day."
     )
   in
   let create_daylink ~from ~dest =
     let params = [ ("from", `Int from); ("dest", `Int dest) ] in
-    let cmd = "START l=node({from}), r=node({dest}) MERGE l-[:NEXT_DAY]->r" in
+    let cmd = "//create_daylink\n
+               START l=node({from}), r=node({dest}) MERGE l-[:NEXT_DAY]->r" in
     API.wrap_cypher ~verbose cmd ~params ~f:(fun _ -> OK ())
   in
   let connect_days = create_daylink in
+  let disconnect_days ~from ~dest =
+    let params = [ ("from", `Int from); ("dest", `Int dest) ] in
+    let cmd = "//disconnect_days\n
+               START l=node({from}), r=node({dest}) MATCH l-[conn:NEXT_DAY]->r DELETE conn" in
+    API.wrap_cypher ~verbose cmd ~params ~f:(fun _ -> OK ())
+  in
 
   let create_event ~parentid _innerid e : (Types.id, string) Result.t =
     let params = [ ("parentid", `Int parentid)
@@ -107,7 +116,7 @@ let make_nodes ?(verbose=false) events =
                CREATE day-[:HAS_EVENT]->(e:EVENT{title: {title}, timestamp: {ts}, uid: uid_ })
                RETURN e.uid
               " in
-    API.wrap_cypher cmd ~params ~f:(function
+    API.wrap_cypher ~verbose cmd ~params ~f:(function
       | `List [ `List [`Int uid] ] -> OK uid
       | _  -> Error "Wrong cypher format while creating event"
     )
@@ -122,25 +131,26 @@ let make_nodes ?(verbose=false) events =
           get_next day_ts >>= fun next_info ->
           match prev_info,next_info with
             | None,None -> (* 1st node *)
-              print_endline "Its a 1st node";
+              (*print_endline "Its a 1st node";*)
               create_day day_ts >>= fun _newid ->
               OK _newid
             | Some (prev_ts,prev_id), None ->
               (* We need to establish link between previous node and current one *)
-              print_endline "There is prev. No next";
+              (*print_endline "There is prev. No next";*)
               create_day day_ts >>= fun new_id ->
               connect_days ~from:prev_id ~dest:new_id >>= fun () ->
               OK new_id
             | None,Some (next_ts,next_id) ->
-              (* We need to establish link between previous node and current one *)
+              (* We need to establish link between following node and current one *)
               create_day day_ts >>= fun new_id ->
               connect_days ~from:new_id ~dest:next_id >>= fun () ->
               OK new_id
             | Some (prev_ts,prev_id), Some (next_ts,next_id) ->
-              (* We need to establish link between previous node and current one *)
+              (* We need to insert a day between two exitent ones *)
               create_day day_ts >>= fun new_id ->
               connect_days ~from:new_id  ~dest:next_id >>= fun () ->
               connect_days ~from:prev_id ~dest:new_id  >>= fun () ->
+              disconnect_days ~from:prev_id ~dest:next_id >>= fun () ->
               OK new_id
         end
       | Some id -> (* Date node already created. Do nothing *)
@@ -148,10 +158,10 @@ let make_nodes ?(verbose=false) events =
     in
 
     day_node_id >>= fun day_node_id ->
-      (*printf "day_node_id=%d\n%!" day_node_id;*)
+    (*printf "day_node_id=%d\n%!" day_node_id;*)
     create_event ~parentid:day_node_id n event >>= fun uid -> begin
-        printf "Event '%s' created%!" e_title;
-        if e_shortcut <> "" then ( print_endline "ADDING!!!"; Shortcuts.add e_shortcut uid );
+        (*printf "Event '%s' created%!" e_title;*)
+        if e_shortcut <> "" then Shortcuts.add e_shortcut uid;
         OK ()
     end
   in
@@ -182,7 +192,7 @@ let create_question ~parent ~title is =
              CREATE e-[:HAS_QUESTION]->(q:QUESTION{text: {qtext}, uid: uid_})
              RETURN uid_"
   in
-  let q_res = API.wrap_cypher cmd ~params ~f:(function
+  let q_res = API.wrap_cypher ~verbose:false cmd ~params ~f:(function
       | `List [`List [`Int uid]] -> OK uid
       | _  -> Error "Wrong cypher format while creating a question"
     )
@@ -203,7 +213,7 @@ let create_question ~parent ~title is =
                  ]
     in
     let cmd = sprintf "MATCH %s\n%s\nRETURN 1" match_str bodies in
-    API.wrap_cypher cmd ~params ~f:(function
+    API.wrap_cypher ~verbose:false cmd ~params ~f:(function
       | `List [`List [`Int _]] -> OK ()
       | _  -> Error "Wrong cypher format while creating an interpretation"
     )
@@ -233,10 +243,13 @@ let all_questions : (string * string * raw_interp list) list =
   ]
 
 let make_questions () =
-  print_endline "Creating questions...";
-  List.fold_left ~init:(OK ()) all_questions
+  if true then begin
+    print_endline "Creating questions...";
+    List.fold_left ~init:(OK ()) all_questions
                  ~f:(fun acc (title,parent,is) -> acc >>= fun _ -> create_question ~parent ~title is)
-  >>= fun _id ->  OK ()
+    >>= fun _id ->  OK ()
+  end
+  else OK ()
 
 let events =
   (* TODO maybe add variable with level of fakeness *)
@@ -458,16 +471,17 @@ let events =
 let create_db () : unit Lwt.t =
   let r = make_nodes events >>= fun () -> make_questions () in
   maybe_error r;
+  print_endline "creating db finished.";
   Lwt.return ()
 
 let get_events (_:Types.timestamp) : string Lwt.t =
   print_endline "db.get_events";
-  let now_ts = Calendar.(now() |> to_unixfloat |> int_of_float) in
-  let cmd = "match (e:EVENT) WHERE e.timestamp <= {ts} RETURN e ORDER by e.timestamp DESC LIMIT 10" in
-  let params = [ ("ts", `Int now_ts) ] in
+  let now_ts = Calendar.(now() |> to_unixfloat) in
+  let cmd = "MATCH (e:EVENT) WHERE e.timestamp <= {ts} RETURN e ORDER by e.timestamp DESC LIMIT 10" in
+  let params = [ ("ts", `Float now_ts) ] in
 
-  let s = API.make_n_commit cmd ~params  in
-  let j = s |> to_json  in
+  let s = API.make_n_commit ~verbose:true cmd ~params  in
+  let j = to_json s in
   let open YoUtil in
   let j2 = j |> drop_assoc |> List.assoc "results" |> drop_list |> List.hd
            |> drop_assoc  |> List.assoc "data" |> drop_list
@@ -481,7 +495,7 @@ let get_events (_:Types.timestamp) : string Lwt.t =
 let event_by_uid uid : string Lwt.t =
   let cmd = "match (e:EVENT) WHERE e.uid = {uid} RETURN e" in
   let params = [ ("uid", `Int uid) ] in
-  let s = API.make_n_commit cmd ~params in
+  let s = API.make_n_commit ~verbose:true cmd ~params in
   print_endline s;
   let j = s |> to_json  in
   let open YoUtil in

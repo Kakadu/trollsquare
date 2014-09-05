@@ -74,12 +74,18 @@ type transaction = int
 
 let make_n_commit ?(verbose=false) cmd ~params =
   let url = sprintf "http://%s:%d/db/data/transaction/commit" Cfg.server Cfg.port in
-  let args = `Assoc ["statements", `List[`Assoc
-    [ ("statement", `String cmd)
-    ; "parameters", `Assoc params
+  let args = `Assoc
+    ["statements", `List
+                    [ `Assoc [ ("statement", `String cmd)
+                             ; "parameters", `Assoc params
+                             ]
+                    ]
     ]
-                    ]]
   in
+  if verbose then begin
+    print_endline @@ Str.global_replace (Str.regexp "\n") " " cmd;
+    print_endline @@ Str.global_replace (Str.regexp "\n") " " @@ Yojson.to_string (`Assoc params);
+  end;
   let req = new Http_client.post_raw url (Yojson.to_string args) in
   req#set_req_header "Accept"       "application/json; charset=UTF8";
   req#set_req_header "Content-type" "application/json";
@@ -100,13 +106,16 @@ let make_n_commit ?(verbose=false) cmd ~params =
   pipeline#run ();
   req#get_resp_body ()
 
-let post_cypher ?(params=[]) cypher =
+let post_cypher ?(verbose=false) ?(params=[]) cypher =
   let url = sprintf "http://%s:%d/db/data/cypher" Cfg.server Cfg.port in
   let pipeline = new Http_client.pipeline in
   let opt = pipeline # get_options in
   let args = `Assoc [ ("query",  `String cypher);
                       ("params", `Assoc params) ] in
-  print_endline @@ Str.global_replace (Str.regexp "\n") " " cypher;
+  if verbose then (
+    print_endline @@ Str.global_replace (Str.regexp "\n") " " cypher;
+    print_endline @@ Str.global_replace (Str.regexp "\n") " " @@ Yojson.to_string (`Assoc params);
+  );
   let req = new Http_client.post_raw url (Yojson.to_string args) in
   req#set_req_header "Accept"       "application/json; charset=UTF8";
   req#set_req_header "Content-type" "application/json";
@@ -127,7 +136,7 @@ let post_cypher ?(params=[]) cypher =
   req#get_resp_body ()
 
 let wrap_cypher ?(verbose=true) cmd ~params ~f =
-  let (ans: string) = post_cypher ~params cmd in
+  let (ans: string) = post_cypher ~verbose ~params cmd in
   if verbose then print_endline ans;
   ans |> to_json |> YoUtil.drop_assoc |> List.assoc "data" |> f
 
