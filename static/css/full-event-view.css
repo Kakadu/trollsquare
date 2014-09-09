@@ -22,7 +22,6 @@
 }
 
 .mode4-body {
-
   width: 70%;
   min-height: 100px;
   border: 1px solid;
@@ -55,3 +54,25 @@
   height: 90%;
   width:  95%;
 }
+
+.mode4-questions-container {
+  margin-top: 5px;
+  border: 1px solid;
+  width: 70%;
+}
+
+.mode4-interpret-container {
+  border: 1px solid;
+  width: 70%;
+  margin-left: 2px;
+
+}
+
+.mode4-question {
+  margin-left: 2px;
+}
+
+.mode4-interpret {
+  margin: 1px 1px 1px 1px;
+}
+

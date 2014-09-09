@@ -16,7 +16,7 @@ end
 class type dbquestion_js = object
   method quid:      int    readonly_prop
   method qtext:     string readonly_prop
-  method interprets: dbinterpret_js t js_array readonly_prop
+  method interprets: dbinterpret_js t js_array t readonly_prop
 end
 
    }}
