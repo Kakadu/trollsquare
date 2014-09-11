@@ -188,9 +188,18 @@ let main_handler () () =
               JQ.jq_selectable params Ojquery.(jQelt @@ js_jQ ".main-events-list")
          }};
   ignore {unit{
-              switch_mode (Lochash.detect_mode ())
+              switch_mode (Lochash.detect_mode ());
+              let d = JQ.dialog ".test_dialog" "title"
+                                [ ("OK", fun () -> print_endline "OK")
+                                ; ("Cancel", fun () -> print_endline "Cancel")
+                                ]
+              in
+              d##show ();
          }};
-  Lwt.return [ heading; left_area; center_view; todo_view; right_area; mode4_event_view ]
+
+  let dialog_div = div ~a:[a_class ["test_dialog"]] [pcdata "dialog content" ] in
+  Lwt.return [ heading; left_area; center_view; todo_view; right_area; mode4_event_view
+               ; dialog_div ]
 
 
 let () =

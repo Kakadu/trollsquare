@@ -144,6 +144,38 @@ module JQ = struct
     let hide s = hide @@ jQelt (Js.string s)
   end
 
+  class type jqui_dialog = object
+    method show : (unit -> unit) Js.meth
+  end
+
+  let dialog selector ~title ~buttons : jqui_dialog Js.t =
+    let buttons =
+      Js.Unsafe.obj @@ Array.of_list @@
+        List.map buttons ~f:(fun (name,f) -> (name, Js.Unsafe.inject @@ Js.wrap_callback f) )
+    in
+    let properties = Js.Unsafe.obj [||] in
+    properties##buttons <- Js.Unsafe.inject buttons;
+    properties##modal   <- Js.Unsafe.inject @@ Js._true;
+    properties##model   <- Js.Unsafe.inject @@ Js.string title;
+
+    (* dialog initialization *)
+    let args = alloc_args 1 in
+    set_arg args 0 (Inject.identity properties);
+    let res = Ops.call_method (jQelt @@ Js.string selector) "dialog" (build_args args) in
+    ignore @@ extract_t res;
+
+    (* wrapping result object *)
+    let ans = Js.Unsafe.obj [||] in
+    let show (): unit =
+      let obj = jQelt (Js.string selector) in
+      let args = alloc_args 1 in
+      set_arg args 0 (Inject.identity @@ Js.string "open");
+      let res = Ops.call_method obj "dialog" (build_args args) in
+      ignore @@ extract_t res
+    in
+    ans##show <- Js.Unsafe.inject @@ Js.wrap_callback show;
+    ans
+
 end
 
 }}
