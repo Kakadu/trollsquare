@@ -37,3 +37,8 @@
 .main-aux-buttons-area input[type="radio"]:checked + label {
     background-color:#bbb;
 }
+
+.ui-dialog .ui-dialog-titlebar
+{
+    height: 1em; /* or whatever you want */
+}

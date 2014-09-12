@@ -189,15 +189,23 @@ let main_handler () () =
          }};
   ignore {unit{
               switch_mode (Lochash.detect_mode ());
-              let d = JQ.dialog ".test_dialog" "title"
-                                [ ("OK", fun () -> print_endline "OK")
-                                ; ("Cancel", fun () -> print_endline "Cancel")
-                                ]
+              let buttons =  [ ("OK", fun () -> print_endline "OK")
+                             ; ("Cancel", fun () -> print_endline "Cancel")
+                             ]
+              in
+              let d = JQ.dialog ~height:600 ~width:800 ~title:"New question" ~buttons ".new_question_dialog"
               in
               d##show ();
          }};
 
-  let dialog_div = div ~a:[a_class ["test_dialog"]] [pcdata "dialog content" ] in
+  let dialog_div =
+    div ~a:[a_class ["new_question_dialog"]]
+        [ pcdata "Enter quesiton below:"
+        ; br()
+        ; raw_input ~a:[] ~input_type:`Text ~value:"" ()
+        ; br()
+        ]
+  in
   Lwt.return [ heading; left_area; center_view; todo_view; right_area; mode4_event_view
                ; dialog_div ]
 
@@ -211,7 +219,7 @@ let () =
         (Eliom_tools.F.html
            ~title:"trollsquare"
            ~js: [ ["js"; "jquery-1.10.2.min.js"]
-                ; ["js"; "jquery-ui.1.10.4.js" ]
+                ; ["js"; "jquery-ui.js" ]
                 ; ["js"; "jquery.timepicker.min.js" ]
                 ]
            ~css:[ ["css"; "trollsquare.css"]
@@ -220,6 +228,9 @@ let () =
                 ; ["css"; "todo-view.css"]
                 ; ["css"; "full-event-view.css" ]  (* mode 4 *)
                 ; ["css"; "work.css"]
-                ; ["css"; "jquery-ui.css"] ]
+                ; ["css"; "jquery-ui.css"]
+                ; ["css"; "jquery-ui.structure.css"]
+                ; ["css"; "jquery-ui.theme.css"]
+                ]
            Html5.F.(body ~a:[] xs)
     ))

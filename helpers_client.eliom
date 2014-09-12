@@ -1,6 +1,7 @@
 {client{
 open Printf
 open Firebug
+open Helpers
 
 let firelog fmt = console##log (Js.string @@ sprintf fmt)
 let printf = firelog
@@ -68,8 +69,11 @@ let build_args args =
     Array.of_list (List.rev !(snd args)) ;
   ]
 let extract_t = Extract.identity
-
-
+(*
+module Option = struct
+    let iter ~f o = match o with Some x -> f x | None -> ()
+end
+ *)
 module JQ = struct
   class type datepicker_options = object
     method dateFormat: Js.js_string Js.t Js.prop
@@ -145,10 +149,10 @@ module JQ = struct
   end
 
   class type jqui_dialog = object
-    method show : (unit -> unit) Js.meth
+    method show : unit Js.meth
   end
 
-  let dialog selector ~title ~buttons : jqui_dialog Js.t =
+  let dialog ?width ?height ~title ~buttons selector : jqui_dialog Js.t =
     let buttons =
       Js.Unsafe.obj @@ Array.of_list @@
         List.map buttons ~f:(fun (name,f) -> (name, Js.Unsafe.inject @@ Js.wrap_callback f) )
@@ -156,7 +160,9 @@ module JQ = struct
     let properties = Js.Unsafe.obj [||] in
     properties##buttons <- Js.Unsafe.inject buttons;
     properties##modal   <- Js.Unsafe.inject @@ Js._true;
-    properties##model   <- Js.Unsafe.inject @@ Js.string title;
+    properties##title   <- Js.Unsafe.inject @@ Js.string title;
+    Option.iter width  ~f:(fun w -> properties##width  <- Js.Unsafe.inject w);
+    Option.iter height ~f:(fun h -> properties##height <- Js.Unsafe.inject h);
 
     (* dialog initialization *)
     let args = alloc_args 1 in
