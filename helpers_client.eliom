@@ -3,23 +3,12 @@ open Printf
 open Firebug
 open Helpers
 
+include Helpers_common
+
 let firelog fmt = console##log (Js.string @@ sprintf fmt)
-let printf = firelog
+let printf fmt  = console##log (Js.string @@ sprintf fmt)
 let print_endline s = console##log (Js.string s)
 
-module List = struct
-  include ListLabels
-  module Assoc = struct
-    let find_exn ~key xs = assoc key xs
-    let (_: key:'a -> ('a*'b) list -> 'b) = find_exn
-
-    let find ~key xs = try  Some(find_exn ~key xs)
-                       with Not_found -> None
-    let remove ~key xs =
-      (*console##log_2 (Js.string "remove: ", key);*)
-      filter xs ~f:(fun (k,_) -> k <> key)
-  end
-end
 module ODates = ODate.Make(ODate.MakeImplem(Unix))
 
 
@@ -161,19 +150,20 @@ module JQ = struct
     properties##buttons <- Js.Unsafe.inject buttons;
     properties##modal   <- Js.Unsafe.inject @@ Js._true;
     properties##title   <- Js.Unsafe.inject @@ Js.string title;
-    Option.iter width  ~f:(fun w -> properties##width  <- Js.Unsafe.inject w);
-    Option.iter height ~f:(fun h -> properties##height <- Js.Unsafe.inject h);
+    Option.iter width  ~f:(fun (w: int) -> properties##width  <- Js.Unsafe.inject w);
+    Option.iter height ~f:(fun (h: int) -> properties##height <- Js.Unsafe.inject h);
 
+    let clas = "." ^ selector in
     (* dialog initialization *)
     let args = alloc_args 1 in
     set_arg args 0 (Inject.identity properties);
-    let res = Ops.call_method (jQelt @@ Js.string selector) "dialog" (build_args args) in
+    let res = Ops.call_method (jQelt @@ Js.string clas) "dialog" (build_args args) in
     ignore @@ extract_t res;
 
     (* wrapping result object *)
     let ans = Js.Unsafe.obj [||] in
     let show (): unit =
-      let obj = jQelt (Js.string selector) in
+      let obj = jQelt @@ Js.string clas in
       let args = alloc_args 1 in
       set_arg args 0 (Inject.identity @@ Js.string "open");
       let res = Ops.call_method obj "dialog" (build_args args) in

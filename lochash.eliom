@@ -54,7 +54,7 @@ let set_value ~key v =
 
 let get_value_exn (k: string) : js_string t =
   let key = Js.string k in
-  List.Assoc.find_exn ~key (read_hash())
+  List.Assoc.assoc_exn key ~set:(read_hash())
 
 let get_value key =
   try Some(get_value_exn key)

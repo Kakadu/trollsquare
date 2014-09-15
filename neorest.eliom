@@ -1,4 +1,5 @@
 open Printf
+open Helpers_common
 open Helpers
 open Http_client.Convenience
 open Result
@@ -26,15 +27,16 @@ module type CONFIG = sig val server:string val port:int end
 
 module Make(Cfg: CONFIG) = struct
 
+(*
 let make_empty_node () : (_,_) Result.t =
   let url = sprintf "http://%s:%d/db/data/node/" Cfg.server Cfg.port in
   let node_properties : (string*string) list = [] in
   let s = (http_post_message url node_properties)#get_resp_body () in
   (match to_json s with
-  | `Assoc xs -> OK (List.Assoc.find_exn xs "self")
+  | `Assoc xs -> OK (List.Assoc.mem ~set:xs "self")
   | _ -> Error ()) >>= fun url ->
    OK (int_of_string @@ String.rsplit (Yojson.to_string url) ~by:'/'  )
-
+   *)
 
 
 let get_node  nodeid =
@@ -239,7 +241,7 @@ let get_next_timeline_node nodeid =
   | _ -> Error "JSON match failure"
 
 let id_from_node_json ej =
-  match List.Assoc.find_exn ej "self" with
+  match List.Assoc.assoc_exn ~set:ej "self" with
   | `String s -> Int64.of_string @@ String.rsplit s ~by:'/'
   | _ -> failwith "Wrong json for function id_from_node_json"
 

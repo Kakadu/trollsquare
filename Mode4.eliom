@@ -95,10 +95,30 @@ let draw_event (ev: Jstypes.dbevent_js Js.t) =
   Lochash.set_value "uid" (string_of_int ev##uid);
   ()
 
+let init_dialogs () =
+  let () =
+    let dialog_div =
+      div [ pcdata "Enter quesiton below:"
+          ; br()
+          ; raw_input ~a:[] ~input_type:`Text ~value:"" ()
+          ; br()
+          ]
+    in
+    let buttons =  [ ("OK", fun () -> print_endline "OK")
+                   ; ("Cancel", fun () -> print_endline "Cancel")
+                   ]
+    in
+    Dialogs.register ~buttons ~selector:"new_question_dialog" ~width:600 ~height:400
+                     ~title:"New question..." ~content:[dialog_div];
+    Dialogs.init ();
+    (*Dialogs.show "new_question_dialog";*)
+  ()
+
 let _onModeChanged =
   let toggleMode on =
     if on then
       begin
+        if not (Dialogs.has_dialog "new-question-dialog") then init_dialogs ();
         Lochash.set_mode Common.Mode4;
         List.iter JQ.Sel.show classes
       end else begin

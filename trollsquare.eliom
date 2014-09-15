@@ -189,31 +189,16 @@ let main_handler () () =
          }};
   ignore {unit{
               switch_mode (Lochash.detect_mode ());
-              let buttons =  [ ("OK", fun () -> print_endline "OK")
-                             ; ("Cancel", fun () -> print_endline "Cancel")
-                             ]
-              in
-              let d = JQ.dialog ~height:600 ~width:800 ~title:"New question" ~buttons ".new_question_dialog"
-              in
-              d##show ();
          }};
 
-  let dialog_div =
-    div ~a:[a_class ["new_question_dialog"]]
-        [ pcdata "Enter quesiton below:"
-        ; br()
-        ; raw_input ~a:[] ~input_type:`Text ~value:"" ()
-        ; br()
-        ]
-  in
-  Lwt.return [ heading; left_area; center_view; todo_view; right_area; mode4_event_view
-               ; dialog_div ]
+  Lwt.return [ heading; left_area; center_view; todo_view; right_area; mode4_event_view ]
 
 
 let () =
   Trollsquare_app.register
     ~service:main_service
     (fun () () ->
+      let init_dialogs = {Dom_html.event Js.t -> unit{ fun _ev -> () }} in
       lwt xs = main_handler () () in
       Lwt.return
         (Eliom_tools.F.html
@@ -232,5 +217,5 @@ let () =
                 ; ["css"; "jquery-ui.structure.css"]
                 ; ["css"; "jquery-ui.theme.css"]
                 ]
-           Html5.F.(body ~a:[] xs)
+           Html5.F.(body ~a:[a_onload init_dialogs] xs)
     ))

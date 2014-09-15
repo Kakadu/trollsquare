@@ -2,18 +2,26 @@ _server/common.cmo :
 _server/common.cmx :
 _server/common.cmo : _server/common.type_mli
 _server/common.cmx : _server/common.type_mli
-_server/db.cmo : _server/types.cmo _server/result.cmo _server/neorest.cmo _server/helpers.cmo
-_server/db.cmx : _server/types.cmx _server/result.cmx _server/neorest.cmx _server/helpers.cmx
-_server/db.type_mli : _server/types.cmo _server/result.cmo _server/neorest.cmo _server/helpers.cmo
+_server/db.cmo : _server/types.cmo _server/result.cmo _server/neorest.cmo _server/helpers_common.cmo _server/helpers.cmo
+_server/db.cmx : _server/types.cmx _server/result.cmx _server/neorest.cmx _server/helpers_common.cmx _server/helpers.cmx
+_server/db.type_mli : _server/types.cmo _server/result.cmo _server/neorest.cmo _server/helpers_common.cmo _server/helpers.cmo
 _server/db.cmo : _server/db.type_mli
 _server/db.cmx : _server/db.type_mli
+_server/dialogs.cmo :
+_server/dialogs.cmx :
+_server/dialogs.cmo : _server/dialogs.type_mli
+_server/dialogs.cmx : _server/dialogs.type_mli
 _server/helpers_client.cmo :
 _server/helpers_client.cmx :
 _server/helpers_client.cmo : _server/helpers_client.type_mli
 _server/helpers_client.cmx : _server/helpers_client.type_mli
-_server/helpers.cmo : _server/result.cmo
-_server/helpers.cmx : _server/result.cmx
-_server/helpers.type_mli : _server/result.cmo
+_server/helpers_common.cmo :
+_server/helpers_common.cmx :
+_server/helpers_common.cmo : _server/helpers_common.type_mli
+_server/helpers_common.cmx : _server/helpers_common.type_mli
+_server/helpers.cmo : _server/result.cmo _server/helpers_common.cmo
+_server/helpers.cmx : _server/result.cmx _server/helpers_common.cmx
+_server/helpers.type_mli : _server/result.cmo _server/helpers_common.cmo
 _server/helpers.cmo : _server/helpers.type_mli
 _server/helpers.cmx : _server/helpers.type_mli
 _server/Jstypes.cmo :
@@ -33,9 +41,9 @@ _server/Mode3.cmo :
 _server/Mode3.cmx :
 _server/Mode3.cmo : _server/Mode3.type_mli
 _server/Mode3.cmx : _server/Mode3.type_mli
-_server/neorest.cmo : _server/result.cmo _server/helpers.cmo
-_server/neorest.cmx : _server/result.cmx _server/helpers.cmx
-_server/neorest.type_mli : _server/result.cmo _server/helpers.cmo
+_server/neorest.cmo : _server/result.cmo _server/helpers_common.cmo _server/helpers.cmo
+_server/neorest.cmx : _server/result.cmx _server/helpers_common.cmx _server/helpers.cmx
+_server/neorest.type_mli : _server/result.cmo _server/helpers_common.cmo _server/helpers.cmo
 _server/neorest.cmo : _server/neorest.type_mli
 _server/neorest.cmx : _server/neorest.type_mli
 _server/result.cmo :
@@ -64,10 +72,18 @@ _client/db.cmo :
 _client/db.cmx :
 _client/db.cmo : _server/db.type_mli
 _client/db.cmx : _server/db.type_mli
-_client/helpers_client.cmo : _client/helpers.cmo
-_client/helpers_client.cmx : _client/helpers.cmx
+_client/dialogs.cmo : _client/helpers_client.cmo _client/helpers.cmo
+_client/dialogs.cmx : _client/helpers_client.cmx _client/helpers.cmx
+_client/dialogs.cmo : _server/dialogs.type_mli
+_client/dialogs.cmx : _server/dialogs.type_mli
+_client/helpers_client.cmo : _client/helpers_common.cmo _client/helpers.cmo
+_client/helpers_client.cmx : _client/helpers_common.cmx _client/helpers.cmx
 _client/helpers_client.cmo : _server/helpers_client.type_mli
 _client/helpers_client.cmx : _server/helpers_client.type_mli
+_client/helpers_common.cmo :
+_client/helpers_common.cmx :
+_client/helpers_common.cmo : _server/helpers_common.type_mli
+_client/helpers_common.cmx : _server/helpers_common.type_mli
 _client/helpers.cmo :
 _client/helpers.cmx :
 _client/helpers.cmo : _server/helpers.type_mli
@@ -104,8 +120,8 @@ _client/TLView.cmo : _client/types.cmo _client/lochash.cmo _client/Jstypes.cmo _
 _client/TLView.cmx : _client/types.cmx _client/lochash.cmx _client/Jstypes.cmx _client/helpers_client.cmx _client/common.cmx
 _client/TLView.cmo : _server/TLView.type_mli
 _client/TLView.cmx : _server/TLView.type_mli
-_client/trollsquare.cmo : _client/lochash.cmo _client/Jstypes.cmo _client/helpers_client.cmo _client/helpers.cmo _client/common.cmo
-_client/trollsquare.cmx : _client/lochash.cmx _client/Jstypes.cmx _client/helpers_client.cmx _client/helpers.cmx _client/common.cmx
+_client/trollsquare.cmo : _client/lochash.cmo _client/Jstypes.cmo _client/helpers_client.cmo _client/helpers.cmo _client/dialogs.cmo _client/common.cmo
+_client/trollsquare.cmx : _client/lochash.cmx _client/Jstypes.cmx _client/helpers_client.cmx _client/helpers.cmx _client/dialogs.cmx _client/common.cmx
 _client/trollsquare.cmo : _server/trollsquare.type_mli
 _client/trollsquare.cmx : _server/trollsquare.type_mli
 _client/types.cmo :
