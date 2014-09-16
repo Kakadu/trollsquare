@@ -12,6 +12,9 @@ let get_interpret_conforms_rpc
     : (int, string) Eliom_pervasives.server_function
   = server_function Json.t<int> Db.interpret_info
 
+let add_question_rpc
+    : (int*string, int) Eliom_pervasives.server_function
+  = server_function Json.t<int*string> (fun (parent_uid,text) -> Db.add_question ~parent_uid text)
 
 }}
 
@@ -26,6 +29,13 @@ open Helpers
 open Helpers_client
 open Printf
 open Firebug
+
+
+type options =
+  { mutable event : Jstypes.dbevent_js Js.t
+  }
+
+let options = { event = Obj.magic () }
 
 let classes = [ "."^container_classname ]
 
@@ -47,6 +57,12 @@ let question_clicked q =
 let event_clicked e =
   Lwt.return ()
 
+let add_question_clicked _e = Dialogs.show "add-question-dialog"
+
+
+let clear_questions_block () =
+  ignore @@ JQ.clear @@ Ojquery.(jQelt @@ js_jQ ".mode4-questions-contatiner")
+
 let draw_questions (qs: Jstypes.dbquestion_js Js.t Js.js_array Js.t) =
   let open Html5.D in
   let map_interpret i =
@@ -63,14 +79,15 @@ let draw_questions (qs: Jstypes.dbquestion_js Js.t Js.js_array Js.t) =
         ]
   in
   let nodes = List.map ~f (Array.to_list @@ Js.to_array qs) in
-  let d = div ~a:[a_class ["mode4-questions-container"]] nodes in
+  let add_question_btn = div ~a:[a_class ["mode4-add-question-btn"]; a_onclick add_question_clicked] [dummy_img ()] in
+  let siblings = add_question_btn :: (nodes) in
+  let d = div ~a:[a_class ["mode4-questions-container"]] siblings in
   let parent = Ojquery.(jQelt @@ js_jQ ("."^container_classname) ) in
   let (_: Ojquery.t) = JQ.append_element (Html5.To_dom.of_div d) parent in
   ()
 
 let draw_event (ev: Jstypes.dbevent_js Js.t) =
   let open Eliom_content.Html5.D in
-  let parent = Ojquery.(jQelt @@ js_jQ ("."^container_classname) ) in
   let ts = ODates.(From.seconds ev##timestamp |> To.string Printer.default) in
   let title_div = div ~a:[a_class ["mode4-title"]]     [ pcdata ev##title] in
   Lwt.ignore_result @@ Lwt_js_events.clicks (To_dom.of_div title_div) (fun _ _ -> event_clicked ev);
@@ -91,27 +108,43 @@ let draw_event (ev: Jstypes.dbevent_js Js.t) =
               ]
         ]
   in
+  let parent = Ojquery.(jQelt @@ js_jQ ("."^container_classname) ) in
   let (_: Ojquery.t) = JQ.append_element (Html5.To_dom.of_div d) parent in
   Lochash.set_value "uid" (string_of_int ev##uid);
   ()
 
 let init_dialogs () =
   let () =
+    let selector = "new_ques1tion_dialog" in
+    let input_class = "new_question_dialog-input" in
+    let open Eliom_content.Html5.D in
     let dialog_div =
       div [ pcdata "Enter quesiton below:"
           ; br()
-          ; raw_input ~a:[] ~input_type:`Text ~value:"" ()
+          ; raw_input ~a:[a_class [input_class]] ~input_type:`Text ~value:"" ()
           ; br()
           ]
     in
-    let buttons =  [ ("OK", fun () -> print_endline "OK")
-                   ; ("Cancel", fun () -> print_endline "Cancel")
-                   ]
+    let onOK () =
+      let text = JQ.val_ Ojquery.(jQelt @@ js_jQ ("."^input_class) ) in
+      Dialogs.close selector;
+      print_endline @@ sprintf "%s" text;
+      clear_questions_block ();
+      begin
+        let event_uid = options.event##uid in
+        lwt res = %add_question_rpc (event_uid, text) in
+        lwt s2 = %get_questions_by_euid_rpc event_uid in
+        console##log (Js.string s2);
+        draw_questions (Json.unsafe_input @@ Js.string s2);
+        Lwt.return ()
+      end |> Lwt.ignore_result;
     in
-    Dialogs.register ~buttons ~selector:"new_question_dialog" ~width:600 ~height:400
+    let onCancel () = Dialogs.close selector in
+    let buttons = [ ("OK", onOK); ("Cancel", onCancel) ] in
+    Dialogs.register ~buttons ~selector ~width:600 ~height:400
                      ~title:"New question..." ~content:[dialog_div];
     Dialogs.init ();
-    (*Dialogs.show "new_question_dialog";*)
+  in
   ()
 
 let _onModeChanged =
@@ -136,8 +169,9 @@ let _onModeChanged =
        Lwt.ignore_result begin
            lwt s = %get_event_by_uid_rpc id in
            console##log (Js.string s);
-           let o = Json.unsafe_input @@ Js.string s in
-           draw_event o;
+           let e = Json.unsafe_input @@ Js.string s in
+           options.event <- e;
+           draw_event e;
            lwt s2 = %get_questions_by_euid_rpc id in
            console##log (Js.string s2);
            draw_questions (Json.unsafe_input @@ Js.string s2);

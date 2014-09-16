@@ -177,12 +177,11 @@ type raw_interp =
   }
 
 type raw_question = string * raw_interp list
-let create_question ~parent ~title is =
-  (*Shortcuts.iter (fun k v -> printf "%s -> %d\n%!" k v);*)
-  let parent_uid = Shortcuts.find_exn parent in
+
+let insert_question ~parent_uid text =
   let params =
     [ "parent", `Int parent_uid
-    ; "qtext",  `String title
+    ; "qtext",  `String text
     ]
   in
   let cmd = "MERGE (id:UniqueId{name: 'question'})
@@ -193,11 +192,15 @@ let create_question ~parent ~title is =
              CREATE e-[:HAS_QUESTION]->(q:QUESTION{text: {qtext}, uid: uid_})
              RETURN uid_"
   in
-  let q_res = API.wrap_cypher ~verbose:false cmd ~params ~f:(function
+  API.wrap_cypher ~verbose:false cmd ~params ~f:(function
       | `List [`List [`Int uid]] -> OK uid
       | _  -> Error "Wrong cypher format while creating a question"
     )
-  in
+
+let create_question ~parent ~title is =
+  (*Shortcuts.iter (fun k v -> printf "%s -> %d\n%!" k v);*)
+  let parent_uid = Shortcuts.find_exn parent in
+  let q_res = insert_question ~parent_uid title in
 
   q_res >>= fun quid ->
   List.fold_left is ~init:(OK()) ~f:(fun acc { ri_text; ri_shortcut; ri_conflicts; ri_conforms } -> acc >>= fun () ->
@@ -518,16 +521,25 @@ let event_by_uid uid : string Lwt.t =
 
 
 let questions_by_event_uid eventuid =
-  let cmd = "MATCH (e:EVENT{uid: {uid}}), e-[:HAS_QUESTION]->q, q-[:HAS_INTERPRET]->interprets
+  let cmd = "MATCH (e:EVENT{uid: {uid}}), e-[:HAS_QUESTION]->q
+             OPTIONAL MATCH q-[:HAS_INTERPRET]->interprets
              WITH e AS e, q as q, [i IN COLLECT(interprets) | {itext: i.text, iuid: i.uid}] AS ii
              RETURN { qtext: q.text, quid: q.uid, interprets: ii } AS qwe"
   in
   let params = [ "uid", `Int eventuid ] in
-  Lwt.return @@ Yojson.to_string @@ `List (API.commit ~params cmd)
+  Lwt.return @@ Yojson.to_string @@ `List (API.commit ~verbose:true ~params cmd)
 
 let interpret_info iuid =
   let cmd = "MATCH (i:INTERPRET{uid: {uid}}), i-[:CONFORMS]->e RETURN e" in
   let params = [ "uid", `Int iuid ] in
   Lwt.return @@ Yojson.to_string @@ `List (API.commit ~params cmd)
+
+let add_question ~parent_uid text =
+  printf "add_question: '%s'\n" text;
+  let q = insert_question ~parent_uid text in
+  match q with
+  | OK uid -> Lwt.return uid
+  | Error s -> print_endline s; assert false
+
 
 }}

@@ -39,15 +39,22 @@ let get_element_by_id_exn id =
 
 type any = Ojquery.t
 module Ops = struct
+  external to_bool : any -> bool = "caml_js_to_bool"
   external magic : 'a -> 'b = "%identity"
   external constant : string -> any = "caml_js_expr"
   external call_method : any -> string -> any array -> any = "caml_js_meth_call"
+  external to_string : any -> string = "caml_js_to_string"
 end
 module Inject = struct
   let identity (i : 'a) : any = Ops.magic i
 end
 module Extract = struct
   let identity (i : any) : 'a = Ops.magic i
+  let int (i : any) : int = Ops.magic i
+  let unit (i : any) : unit = Ops.magic ()
+  let float (i : any) : float = Ops.magic i
+  let string (i : any) : string = Ops.to_string (Ops.magic i)
+  let bool (i : any) : bool = Ops.to_bool (Ops.magic i)
 end
 
 let alloc_args nb = Array.make nb (Ops.constant "undefined"), ref []
@@ -124,6 +131,11 @@ module JQ = struct
     let res = Ops.call_method obj "empty" (build_args args) in
     extract_t res
 
+  let val_ obj =
+    let args = alloc_args 0 in
+    let res = Ops.call_method obj "val" (build_args args) in
+    Extract.string res
+
   let attr obj (name: string) (newval: string) =
     let args = alloc_args 2 in
     set_arg args 0 (Inject.identity @@ Js.string name) ;
@@ -138,7 +150,8 @@ module JQ = struct
   end
 
   class type jqui_dialog = object
-    method show : unit Js.meth
+    method show  : unit Js.meth
+    method close : unit Js.meth
   end
 
   let dialog ?width ?height ~title ~buttons selector : jqui_dialog Js.t =
@@ -169,9 +182,26 @@ module JQ = struct
       let res = Ops.call_method obj "dialog" (build_args args) in
       ignore @@ extract_t res
     in
-    ans##show <- Js.Unsafe.inject @@ Js.wrap_callback show;
+    let close (): unit =
+      let obj = jQelt @@ Js.string clas in
+      let args = alloc_args 1 in
+      set_arg args 0 (Inject.identity @@ Js.string "close");
+      let res = Ops.call_method obj "dialog" (build_args args) in
+      ignore @@ extract_t res
+    in
+    ans##show  <- Js.Unsafe.inject @@ Js.wrap_callback show;
+    ans##close <- Js.Unsafe.inject @@ Js.wrap_callback close;
     ans
 
 end
+
+open Eliom_content.Html5.F
+let dummy_img ?a ?(alt="") () =
+  let a = match a with
+  | Some a -> a
+  | None   -> []
+  in
+  img ~a ~src:(Xml.uri_of_string "") ~alt ()
+
 
 }}

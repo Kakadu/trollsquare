@@ -29,16 +29,25 @@ let init () =
     let parent = Ojquery.(jQelt @@ js_jQ "body") in
     let (_: Ojquery.t) = JQ.append_element (To_dom.of_div node) parent in
     let d = JQ.dialog ~width ~height ~title ~buttons selector in
+    d##close ();
     Ref.replace dialogs ~f:(fun ds -> (selector,d) :: ds);
   in
   List.iter !ds ~f;
   Ref.replace ds (fun _ -> [])
 
 
+let get selector =
+  let d = List.Assoc.find_exn !dialogs ~cond:(fun (d,_) -> d = selector) in
+  (snd d)
+
 let show selector =
   try let d = List.Assoc.find_exn !dialogs ~cond:(fun (d,_) -> d = selector) in
-      printf "showing dialog there";
       (snd d)##show ()
+  with Not_found -> print_endline @@ Printf.sprintf "No such dialog: %s\n" selector
+
+let close selector =
+  try let d = List.Assoc.find_exn !dialogs ~cond:(fun (d,_) -> d = selector) in
+      (snd d)##close ()
   with Not_found -> print_endline @@ Printf.sprintf "No such dialog: %s\n" selector
 
 let has_dialog selector =
