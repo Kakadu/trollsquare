@@ -541,5 +541,7 @@ let add_question ~parent_uid text =
   | OK uid -> Lwt.return uid
   | Error s -> print_endline s; assert false
 
+let remove_question quid =
+  Lwt.return ()
 
 }}

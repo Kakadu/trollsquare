@@ -16,6 +16,10 @@ let add_question_rpc
     : (int*string, int) Eliom_pervasives.server_function
   = server_function Json.t<int*string> (fun (parent_uid,text) -> Db.add_question ~parent_uid text)
 
+let remove_question_rpc
+    : (int, unit) Eliom_pervasives.server_function
+  = server_function Json.t<int> Db.remove_question
+
 }}
 
 {shared{
@@ -38,6 +42,7 @@ type options =
 let options = { event = Obj.magic () }
 
 let classes = [ "."^container_classname ]
+let q_container_classname = "mode4-questions-container"
 
 let clear () =
   console##log (Js.string "clear ()");
@@ -57,11 +62,16 @@ let question_clicked q =
 let event_clicked e =
   Lwt.return ()
 
-let add_question_clicked _e = Dialogs.show "add-question-dialog"
+let add_question_clicked _e = Dialogs.show "new_question_dialog"
 
+
+let remove_question_clicked quid _ev =
+  Lwt.ignore_result (lwt _ = %remove_question_rpc quid in
+                     (* refresh *)
+                     Lwt.return ())
 
 let clear_questions_block () =
-  ignore @@ JQ.clear @@ Ojquery.(jQelt @@ js_jQ ".mode4-questions-contatiner")
+  ignore @@ JQ.hide @@ Ojquery.(jQelt @@ js_jQ ".node_n_question_container")
 
 let draw_questions (qs: Jstypes.dbquestion_js Js.t Js.js_array Js.t) =
   let open Html5.D in
@@ -70,20 +80,24 @@ let draw_questions (qs: Jstypes.dbquestion_js Js.t Js.js_array Js.t) =
     Lwt.ignore_result @@ Lwt_js_events.clicks (To_dom.of_div d) (fun _ _ -> interpretation_clicked i);
     d
   in
+
   let f (q: Jstypes.dbquestion_js Js.t) =
     let title_div = div ~a:[a_class ["mode4-question"]] [pcdata q##qtext] in
+    let remove_btn = div ~a:[a_class ["mode4-remove-question-btn"]
+                            ; a_onclick (remove_question_clicked q##quid) ]
+                         [dummy_img ()]
+    in
     Lwt.ignore_result @@ Lwt_js_events.clicks (To_dom.of_div title_div) (fun _ _ -> question_clicked q);
-    div [ title_div
-        ; div ~a:[a_class ["mode4-interpret-container"]] @@
-            List.map ~f:map_interpret (Array.to_list @@ Js.to_array q##interprets)
-        ]
+    div ~a:[a_class ["node_n_question_container"]]
+      [ title_div
+      ; remove_btn
+      ; div ~a:[a_class ["mode4-interpret-container"]] @@
+          List.map ~f:map_interpret (Array.to_list @@ Js.to_array q##interprets)
+      ]
   in
   let nodes = List.map ~f (Array.to_list @@ Js.to_array qs) in
-  let add_question_btn = div ~a:[a_class ["mode4-add-question-btn"]; a_onclick add_question_clicked] [dummy_img ()] in
-  let siblings = add_question_btn :: (nodes) in
-  let d = div ~a:[a_class ["mode4-questions-container"]] siblings in
-  let parent = Ojquery.(jQelt @@ js_jQ ("."^container_classname) ) in
-  let (_: Ojquery.t) = JQ.append_element (Html5.To_dom.of_div d) parent in
+  let parent = Ojquery.(jQelt @@ js_jQ ("."^q_container_classname) ) in
+  List.iter nodes ~f:(fun d -> ignore @@ JQ.append_element (Html5.To_dom.of_div d) parent);
   ()
 
 let draw_event (ev: Jstypes.dbevent_js Js.t) =
@@ -110,12 +124,17 @@ let draw_event (ev: Jstypes.dbevent_js Js.t) =
   in
   let parent = Ojquery.(jQelt @@ js_jQ ("."^container_classname) ) in
   let (_: Ojquery.t) = JQ.append_element (Html5.To_dom.of_div d) parent in
+
+  let add_question_btn = div ~a:[a_class ["mode4-add-question-btn"]; a_onclick add_question_clicked] [dummy_img ()] in
+  let cnt = div ~a:[a_class [q_container_classname]] [add_question_btn] in
+  let (_: Ojquery.t) = JQ.append_element (Html5.To_dom.of_div cnt) parent in
   Lochash.set_value "uid" (string_of_int ev##uid);
   ()
 
 let init_dialogs () =
   let () =
-    let selector = "new_ques1tion_dialog" in
+    let selector = "new_question_dialog" in
+    if not(Dialogs.has_dialog selector) then
     let input_class = "new_question_dialog-input" in
     let open Eliom_content.Html5.D in
     let dialog_div =
@@ -142,10 +161,9 @@ let init_dialogs () =
     let onCancel () = Dialogs.close selector in
     let buttons = [ ("OK", onOK); ("Cancel", onCancel) ] in
     Dialogs.register ~buttons ~selector ~width:600 ~height:400
-                     ~title:"New question..." ~content:[dialog_div];
-    Dialogs.init ();
+                     ~title:"New question..." ~content:[dialog_div]
   in
-  ()
+  Dialogs.init ()
 
 let _onModeChanged =
   let toggleMode on =
@@ -153,7 +171,8 @@ let _onModeChanged =
       begin
         if not (Dialogs.has_dialog "new-question-dialog") then init_dialogs ();
         Lochash.set_mode Common.Mode4;
-        List.iter JQ.Sel.show classes
+        List.iter JQ.Sel.show classes;
+        init_dialogs ();
       end else begin
         List.iter JQ.Sel.hide classes;
         clear ();
