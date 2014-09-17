@@ -4,13 +4,22 @@
 let get_event_by_uid_rpc
     : (int, string) Eliom_pervasives.server_function
   = server_function Json.t<int> Db.event_by_uid
+
 let get_questions_by_euid_rpc
     : (int, string) Eliom_pervasives.server_function
   = server_function Json.t<int> Db.questions_by_event_uid
 
+let get_event_relations_rpc
+    : (int, string) Eliom_pervasives.server_function
+  = server_function Json.t<int> Db.event_relations
+
 let get_interpret_conforms_rpc
     : (int, string) Eliom_pervasives.server_function
   = server_function Json.t<int> Db.interpret_info
+
+let get_interpret_relations_rpc
+    : (int, string) Eliom_pervasives.server_function
+  = server_function Json.t<int> Db.interpret_relations
 
 let add_question_rpc
     : (int*string, int) Eliom_pervasives.server_function
@@ -42,6 +51,12 @@ open Helpers_client
 open Printf
 open Firebug
 
+module Selectors = struct
+  let new_interpret_dialog = "new_interpret_dialog"
+  let new_question_dialog  = "new_question_dialog"
+  let confirmed_by_caption = "confirmed_by_caption"
+  let conflicts_with_caption = "conflicts_with_caption"
+end
 
 (* TODO: maybe get event id from url *)
 type options =
@@ -60,21 +75,21 @@ let clear () =
                         ignore @@ JQ.clear el ;
                        )
 
+let event_clicked e =
+  let _ = Ojquery.(text_set @@ jQelt @@ js_jQ @@ ("."^Selectors.confirmed_by_caption))   "Event confirmed by:" in
+  let _ = Ojquery.(text_set @@ jQelt @@ js_jQ @@ ("."^Selectors.conflicts_with_caption)) "Event conflicts with:" in
+  lwt str = %get_event_relations_rpc options.event##uid in
+  print_endline str;
+  Lwt.return ()
+
 let interpretation_clicked i =
   print_endline @@ i##itext;
+  let _ = Ojquery.(text_set @@ jQelt @@ js_jQ @@ ("."^Selectors.confirmed_by_caption))   "Interpretation confirmed by:" in
+  let _ = Ojquery.(text_set @@ jQelt @@ js_jQ @@ ("."^Selectors.conflicts_with_caption)) "Interpretation conflicts with:" in
+  lwt s = %get_interpret_relations_rpc i##iuid in
+  print_endline s;
   Lwt.return ()
 
-let question_clicked q =
-  print_endline @@ q##qtext;
-  Lwt.return ()
-
-let event_clicked e =
-  Lwt.return ()
-
-module Selectors = struct
-  let new_interpret_dialog = "new_interpret_dialog"
-  let new_question_dialog  = "new_question_dialog"
-end
 
 let add_question_clicked _e = Dialogs.show Selectors.new_question_dialog
 
@@ -133,7 +148,9 @@ and draw_questions (qs: Jstypes.dbquestion_js Js.t Js.js_array Js.t) =
                           ]
                        [dummy_img ()]
     in
+(*
     Lwt.ignore_result @@ Lwt_js_events.clicks (To_dom.of_div title_div) (fun _ _ -> question_clicked q);
+ *)
     div ~a:[a_class ["node_n_question_container"]]
       [ title_div
       ; remove_btn
@@ -161,11 +178,11 @@ let draw_event (ev: Jstypes.dbevent_js Js.t) =
         ; div ~a:[a_class ["mode4-body"]] []
         ; div ~a:[a_class ["mode4-links"]]
               [ div ~a:[a_class ["mode4-confirmed-by"]]
-                    [ div [pcdata "Confirmed by"]
+                    [ div ~a:[a_class [Selectors.confirmed_by_caption]] [pcdata "Confirmed by"]
                     ; div ~a:[a_class ["mode4-confirmed-by-container"]] []
                     ]
               ; div ~a:[a_class ["mode4-conflicts-with"]]
-                    [ div [pcdata "Conflics with"]
+                    [ div ~a:[a_class [Selectors.conflicts_with_caption]] [pcdata "Conflics with"]
                     ; div ~a:[a_class ["mode4-conflicts-with-container"]] []
                     ]
               ]

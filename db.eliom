@@ -489,7 +489,6 @@ let create_db () : unit Lwt.t =
   Lwt.return ()
 
 let get_events (_:Types.timestamp) : string Lwt.t =
-  print_endline "db.get_events";
   let now_ts = Calendar.(now() |> to_unixfloat) in
   let cmd = "MATCH (e:EVENT) WHERE e.timestamp <= {ts} RETURN e ORDER by e.timestamp DESC LIMIT 10" in
   let params = [ ("ts", `Float now_ts) ] in
@@ -502,7 +501,7 @@ let get_events (_:Types.timestamp) : string Lwt.t =
   in
   let j3 = List.map j2 ~f:(fun x -> x |> drop_assoc |> List.assoc "row" |> drop_list |> List.hd ) in
   let s = Yojson.to_string (`List j3) in
-  print_endline s;
+  (*print_endline s;*)
   Lwt.return s
 
 (* uid is inner id *)
@@ -518,6 +517,30 @@ let event_by_uid uid : string Lwt.t =
   in
   let j3 = List.map j2 ~f:(fun x -> x |> drop_assoc |> List.assoc "row" |> drop_list |> List.hd ) in
   Lwt.return @@ Yojson.to_string @@ List.hd j3
+
+let event_relations euid : string Lwt.t =
+  let cmd = "MATCH (e:EVENT{uid: {euid}})
+             OPTIONAL MATCH e-[:CONFLICTS]->(i1:EVENT)
+             OPTIONAL MATCH e-[:CONFORMS ]->(i2:EVENT)
+             WITH [i IN COLLECT(i1) | {itext: i.text, iuid: i.uid}] AS i1,
+                  [i IN COLLECT(i2) | {itext: i.text, iuid: i.uid}] AS i2
+             RETURN {conflicts: i1, conforms: i2 }"
+  in
+  let params = [ "euid", `Int euid ] in
+  Lwt.return @@ Yojson.to_string @@ `List (API.commit ~params cmd)
+
+let interpret_relations iuid : string Lwt.t =
+  let cmd = "MATCH (i:INTERPRET{uid: {iuid}})
+             OPTIONAL MATCH i-[:CONFLICTS]->(e1:EVENT)
+             OPTIONAL MATCH i-[:CONFORMS ]->(e2:EVENT)
+             WITH [e IN COLLECT(e1) | {title: e.title, uid: e.uid, timestamp: e.timestamp }] AS e1,
+                  [e IN COLLECT(e2) | {title: e.title, uid: e.uid, timestamp: e.timestamp }] AS e2
+             RETURN {conflicts: e1, conforms: e2 }"
+  in
+  let params = [ "iuid", `Int iuid ] in
+  Lwt.return @@ Yojson.to_string @@ `List (API.commit ~params cmd)
+
+
 
 
 let questions_by_event_uid eventuid =

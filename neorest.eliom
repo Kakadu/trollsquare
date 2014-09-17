@@ -108,16 +108,22 @@ let make_n_commit ?(verbose=false) cmd ~params =
   pipeline#run ();
   req#get_resp_body ()
 
-let commit ?(verbose=false) cmd ~params =
+let commit ?(verbose=true) cmd ~params =
   let s = make_n_commit ~verbose cmd ~params in
   if verbose then print_endline s;
   let j1 = to_json s in
   try
     let open YoUtil in
+    (* TODO: get error message from JSON
+     {"results":[],
+      "errors":[{"code":"Neo.ClientError.Statement.InvalidSyntax",
+                 "message":"i1 not defined (line 6, column 33)\n\"             RETURN {conflicts: i1, conforms: i2 }\"\n                                 ^"}]}
+     *)
     let j2 = j1 |> drop_assoc |> List.assoc "results" |> drop_list |> List.hd
                 |> drop_assoc  |> List.assoc "data" |> drop_list in
     List.map j2 ~f:(fun x -> x |> drop_assoc |> List.assoc "row" |> drop_list |> List.hd)
-  with exn -> failwith "Some error or wrong cypher result format in Neorest.commit"
+  with exn -> print_endline s;
+              failwith "Some error or wrong cypher result format in Neorest.commit"
 
 
 
