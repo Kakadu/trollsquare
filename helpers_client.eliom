@@ -136,6 +136,12 @@ module JQ = struct
     let res = Ops.call_method obj "val" (build_args args) in
     Extract.string res
 
+  let set_val obj text =
+    let args = alloc_args 1 in
+    set_arg args 0 (Inject.identity @@ Js.string text) ;
+    let res = Ops.call_method obj "val" (build_args args) in
+    ()
+
   let attr obj (name: string) (newval: string) =
     let args = alloc_args 2 in
     set_arg args 0 (Inject.identity @@ Js.string name) ;
@@ -143,6 +149,10 @@ module JQ = struct
     let res = Ops.call_method obj "attr" (build_args args) in
     extract_t res
 
+  let tooltip obj =
+    let args = alloc_args 0 in
+    let res = Ops.call_method obj "tooltip" (build_args args) in
+    ignore @@ extract_t res
 
   module Sel = struct
     let show s = show @@ jQelt (Js.string s)

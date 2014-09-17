@@ -64,12 +64,13 @@
 .mode4-interpret-container {
   border: 1px solid;
   width: 70%;
-  margin-left: 2px;
-
+  margin-left:   2px;
+  margin-bottom: 1px;
 }
 
 .mode4-question {
   margin-left: 2px;
+  display: inline-block;
 }
 
 .mode4-interpret {
@@ -80,3 +81,28 @@
   content: url("http://png-2.findicons.com/files/icons/1160/sticky/128/question.png");
   width: 20px; height: 20px;
 }
+
+.mode4-remove-question-btn {
+ display: inline-block;
+}
+.mode4-remove-question-btn img {
+  content: url("http://www.iconsearch.ru/uploads/icons/softwaredemo/128x128/deletered.png");
+  width: 20px; height: 20px;
+}
+
+.mode4-add-interpret-btn {
+  display: inline-block;
+}
+.mode4-add-interpret-btn img {
+  content: url("http://a.dryicons.com/images/icon_sets/simplistica/png/128x128/add.png");
+  width: 20px; height: 20px;
+}
+
+.mode4-remove-interpret-btn {
+ display: inline-block;
+}
+.mode4-remove-interpret-btn img {
+  content: url("http://iconizer.net/files/Brightmix/orig/monotone_close_exit_delete.png");
+  width: 20px; height: 20px;
+}
+

@@ -192,7 +192,7 @@ let insert_question ~parent_uid text =
              CREATE e-[:HAS_QUESTION]->(q:QUESTION{text: {qtext}, uid: uid_})
              RETURN uid_"
   in
-  API.wrap_cypher ~verbose:false cmd ~params ~f:(function
+  API.wrap_cypher ~verbose:true cmd ~params ~f:(function
       | `List [`List [`Int uid]] -> OK uid
       | _  -> Error "Wrong cypher format while creating a question"
     )
@@ -535,13 +535,65 @@ let interpret_info iuid =
   Lwt.return @@ Yojson.to_string @@ `List (API.commit ~params cmd)
 
 let add_question ~parent_uid text =
-  printf "add_question: '%s'\n" text;
+  (*printf "add_question: %d--->'%s'\n" parent_uid text;*)
   let q = insert_question ~parent_uid text in
   match q with
   | OK uid -> Lwt.return uid
   | Error s -> print_endline s; assert false
 
 let remove_question quid =
+  let cmd  = "MATCH ev-[c1:HAS_QUESTION]->(q:QUESTION{uid: {quid}})
+              OPTIONAL MATCH q-[r:HAS_INTERPRET]->i
+              OPTIONAL MATCH i-[conn]->()
+              DELETE conn, r, c1
+              DELETE i
+              DELETE q
+              "
+  in
+  let params = [ ("quid", `Int quid) ] in
+  let _ = API.wrap_cypher ~verbose:true cmd ~params ~f:(function
+      | `List [`List [`Int uid]] -> OK uid
+      | _  -> Error "Wrong cypher format while creating a question"
+    )
+  in
   Lwt.return ()
+
+let remove_interpret iuid =
+  let cmd  = "MATCH (q:QUESTION)-[c:HAS_INTERPRET]->(i:INTERPRET{uid: {iuid}})
+              OPTIONAL MATCH i-[conn]->()
+              DELETE conn, c
+              DELETE i"
+  in
+  let params = [ ("iuid", `Int iuid) ] in
+  let _ = API.wrap_cypher cmd ~params ~f:(function
+      | `List [`List [`Int uid]] -> OK uid
+      | _  -> Error "Wrong cypher format while creating a question"
+    )
+  in
+  Lwt.return ()
+
+let add_interpret ~parent_uid text =
+  let params =
+    [ "parent", `Int parent_uid
+    ; "itext",  `String text
+    ]
+  in
+  let cmd = sprintf "MERGE (id:UniqueId{name: 'interpret'})
+                     ON CREATE SET id.count = 1
+                     ON MATCH SET id.count = id.count + 1
+                     WITH id.count AS uid_
+                     MATCH (q:QUESTION{uid: {parent}})
+                     CREATE q-[:HAS_INTERPRET]->(i:INTERPRET{text: {itext}, uid: uid_})
+                     RETURN uid_"
+  in
+  let r = API.wrap_cypher cmd ~params ~f:(function
+      | `List [`List [`Int uid]] -> OK uid
+      | _  -> Error "Wrong cypher format while creating a interpret"
+    )
+  in
+  match r with
+  | OK uid -> Lwt.return uid
+  | Error s -> print_endline s; assert false
+
 
 }}
