@@ -70,10 +70,7 @@ let q_container_classname = "mode4-questions-container"
 
 let clear () =
   console##log (Js.string "clear ()");
-  List.iter classes ~f:(fun cid ->
-                        let el = Ojquery.(jQelt @@ js_jQ cid) in
-                        ignore @@ JQ.clear el ;
-                       )
+  List.iter classes ~f:(fun cid -> ignore @@ JQ.clear Ojquery.(jQelt @@ js_jQ cid) )
 
 let event_clicked e =
   let _ = Ojquery.(text_set @@ jQelt @@ js_jQ @@ ("."^Selectors.confirmed_by_caption))   "Event confirmed by:" in
@@ -83,11 +80,12 @@ let event_clicked e =
   Lwt.return ()
 
 let interpretation_clicked i =
-  print_endline @@ i##itext;
   let _ = Ojquery.(text_set @@ jQelt @@ js_jQ @@ ("."^Selectors.confirmed_by_caption))   "Interpretation confirmed by:" in
   let _ = Ojquery.(text_set @@ jQelt @@ js_jQ @@ ("."^Selectors.conflicts_with_caption)) "Interpretation conflicts with:" in
-  lwt s = %get_interpret_relations_rpc i##iuid in
-  print_endline s;
+  lwt ansstr = %get_interpret_relations_rpc i##iuid in
+  print_endline ansstr;
+  let data : Jstypes.conforms_conflicts Js.t = Json.unsafe_input @@ Js.string ansstr in
+  JQ.clear el ;
   Lwt.return ()
 
 
