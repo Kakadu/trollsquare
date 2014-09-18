@@ -14,6 +14,10 @@
   display: inline-block;
 }
 
+.mode4-title:hover {
+  text-decoration: underline;
+}
+
 .mode4-timestamp {
   //position: absolute;
   display: inline-block;
@@ -37,18 +41,27 @@
   height: 50%;
   top: 0px;
 }
-.mode4-confirmed-by-container {
+.mode4_confirmed_by_container {
   width: 25%;
   border: 1px solid;
   height: 90%;
   width:  95%;
 }
+.mode4_confirmed_by_item {
+  margin: 2px 0px 2px 0px;
+}
+.mode4_confirmed_by_item:hover {
+  border: 1px solid gray;
+  -webkit-transform: scale(0.95);
+  transform: scale(0.95);
+}
+
 .mode4-conflicts-with {
   height: 50%;
   bottom: 0px;
 
 }
-.mode4-conflicts-with-container {
+.mode4_conflicts_with_container {
   width: 25%;
   border: 1px solid;
   height: 90%;
@@ -75,6 +88,9 @@
 
 .mode4-interpret {
   margin: 1px 1px 1px 1px;
+}
+.mode4-interpret:hover {
+  text-decoration: underline;
 }
 
 .mode4-add-question-btn img {

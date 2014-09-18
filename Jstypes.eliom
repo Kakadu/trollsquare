@@ -20,8 +20,8 @@ class type dbquestion_js = object
 end
 
 class type conforms_conflicts = object
-  method conforms  : dbevent_js t js_array t
-  method conflicts : dbevent_js t js_array t
+  method conforms  : dbevent_js t js_array t readonly_prop
+  method conflicts : dbevent_js t js_array t readonly_prop
 end
 
    }}

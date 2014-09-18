@@ -54,8 +54,12 @@ open Firebug
 module Selectors = struct
   let new_interpret_dialog = "new_interpret_dialog"
   let new_question_dialog  = "new_question_dialog"
-  let confirmed_by_caption = "confirmed_by_caption"
-  let conflicts_with_caption = "conflicts_with_caption"
+  let confirmed_by_caption = "mode4_confirmed_by_caption"
+  let conflicts_with_caption = "mode4_conflicts_with_caption"
+  let confirmed_by_container = "mode4_confirmed_by_container"
+  let conflicts_with_container = "mode4_conflicts_with_container"
+  let confirmed_by_item        = "mode4_confirmed_by_item"
+  let conflicts_with_item      = "mode4_conflicts_with_item"
 end
 
 (* TODO: maybe get event id from url *)
@@ -69,14 +73,16 @@ let classes = [ "."^container_classname ]
 let q_container_classname = "mode4-questions-container"
 
 let clear () =
-  console##log (Js.string "clear ()");
-  List.iter classes ~f:(fun cid -> ignore @@ JQ.clear Ojquery.(jQelt @@ js_jQ cid) )
+  console##log (Js.string "Mode4.clear ()");
+  List.iter (Selectors.confirmed_by_container :: Selectors.conflicts_with_container :: classes)
+            ~f:(fun cid -> ignore @@ JQ.clear Ojquery.(jQelt @@ js_jQ cid) )
 
 let event_clicked e =
   let _ = Ojquery.(text_set @@ jQelt @@ js_jQ @@ ("."^Selectors.confirmed_by_caption))   "Event confirmed by:" in
   let _ = Ojquery.(text_set @@ jQelt @@ js_jQ @@ ("."^Selectors.conflicts_with_caption)) "Event conflicts with:" in
   lwt str = %get_event_relations_rpc options.event##uid in
   print_endline str;
+  let _ = JQ.Sel.clear ("."^Selectors.confirmed_by_container) in
   Lwt.return ()
 
 let interpretation_clicked i =
@@ -84,8 +90,27 @@ let interpretation_clicked i =
   let _ = Ojquery.(text_set @@ jQelt @@ js_jQ @@ ("."^Selectors.conflicts_with_caption)) "Interpretation conflicts with:" in
   lwt ansstr = %get_interpret_relations_rpc i##iuid in
   print_endline ansstr;
-  let data : Jstypes.conforms_conflicts Js.t = Json.unsafe_input @@ Js.string ansstr in
-  JQ.clear el ;
+  let data_opt : Jstypes.conforms_conflicts Js.t Js.Optdef.t = Js.array_get (Json.unsafe_input @@ Js.string ansstr) 0 in
+  let data = Js.Optdef.get data_opt (fun () -> failwith "can't parse data from server") in
+
+  let _ = JQ.Sel.clear ("."^Selectors.confirmed_by_container) in
+  let nodes =
+    let xs: Jstypes.dbevent_js Js.t list = Array.to_list @@ Js.to_array data##conforms in
+    let open Html5.D in
+    let f ev =
+      console##log_3 (ev, ev##title, Js.string ev##title );
+      let ans = div ~a:[a_class [Selectors.confirmed_by_item]] [pcdata ev##title] in
+      Lwt_js_events.clicks (To_dom.of_div ans) (fun _ _ -> print_endline @@ sprintf "clicked on conn-n %s" ev##title;
+                                                           clear();
+                                                           Common.show_node (Some ev);
+                                                           Lwt.return ());
+      ans
+    in
+    List.map xs ~f
+  in
+  let container = Ojquery.(jQelt @@ js_jQ @@ "."^Selectors.confirmed_by_container) in
+  console##log (container);
+  List.iter nodes ~f:(fun d -> ignore @@ JQ.append_element (Html5.To_dom.of_div d) container);
   Lwt.return ()
 
 
@@ -146,9 +171,7 @@ and draw_questions (qs: Jstypes.dbquestion_js Js.t Js.js_array Js.t) =
                           ]
                        [dummy_img ()]
     in
-(*
-    Lwt.ignore_result @@ Lwt_js_events.clicks (To_dom.of_div title_div) (fun _ _ -> question_clicked q);
- *)
+
     div ~a:[a_class ["node_n_question_container"]]
       [ title_div
       ; remove_btn
@@ -177,11 +200,11 @@ let draw_event (ev: Jstypes.dbevent_js Js.t) =
         ; div ~a:[a_class ["mode4-links"]]
               [ div ~a:[a_class ["mode4-confirmed-by"]]
                     [ div ~a:[a_class [Selectors.confirmed_by_caption]] [pcdata "Confirmed by"]
-                    ; div ~a:[a_class ["mode4-confirmed-by-container"]] []
+                    ; div ~a:[a_class [Selectors.confirmed_by_container]] []
                     ]
               ; div ~a:[a_class ["mode4-conflicts-with"]]
-                    [ div ~a:[a_class [Selectors.conflicts_with_caption]] [pcdata "Conflics with"]
-                    ; div ~a:[a_class ["mode4-conflicts-with-container"]] []
+                    [ div ~a:[a_class [Selectors.conflicts_with_caption]] [pcdata "Conflicts with"]
+                    ; div ~a:[a_class [Selectors.conflicts_with_container]] []
                     ]
               ]
         ]
@@ -288,6 +311,7 @@ let _onModeChanged =
            lwt s = %get_event_by_uid_rpc id in
            console##log (Js.string s);
            let e = Json.unsafe_input @@ Js.string s in
+           console##log (e);
            options.event <- e;
            draw_event e;
            lwt s2 = %get_questions_by_euid_rpc id in

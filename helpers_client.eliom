@@ -126,6 +126,7 @@ module JQ = struct
     let res = Ops.call_method obj "show" (build_args args) in
     extract_t res
 
+  (*  Remove all child nodes of the set of matched elements from the DOM. *)
   let clear obj =
     let args = alloc_args 0 in
     let res = Ops.call_method obj "empty" (build_args args) in
@@ -157,6 +158,7 @@ module JQ = struct
   module Sel = struct
     let show s = show @@ jQelt (Js.string s)
     let hide s = hide @@ jQelt (Js.string s)
+    let clear s = clear @@ jQelt (Js.string s)
   end
 
   class type jqui_dialog = object

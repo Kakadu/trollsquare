@@ -225,7 +225,7 @@ let create_question ~parent ~title is =
                  ; "itext", `String ri_text
                  ]
     in
-    API.wrap_cypher ~verbose:true cmd ~params ~f:(function
+    API.wrap_cypher cmd ~params ~f:(function
       | `List [] -> OK ()
       | _  -> Error "Wrong cypher format while creating an interpretation"
     )
@@ -493,7 +493,7 @@ let get_events (_:Types.timestamp) : string Lwt.t =
   let cmd = "MATCH (e:EVENT) WHERE e.timestamp <= {ts} RETURN e ORDER by e.timestamp DESC LIMIT 10" in
   let params = [ ("ts", `Float now_ts) ] in
 
-  let s = API.make_n_commit ~verbose:true cmd ~params  in
+  let s = API.make_n_commit cmd ~params  in
   let j = to_json s in
   let open YoUtil in
   let j2 = j |> drop_assoc |> List.assoc "results" |> drop_list |> List.hd
@@ -508,8 +508,8 @@ let get_events (_:Types.timestamp) : string Lwt.t =
 let event_by_uid uid : string Lwt.t =
   let cmd = "match (e:EVENT) WHERE e.uid = {uid} RETURN e" in
   let params = [ ("uid", `Int uid) ] in
-  let s = API.make_n_commit ~verbose:true cmd ~params in
-  print_endline s;
+  let s = API.make_n_commit cmd ~params in
+
   let j = s |> to_json  in
   let open YoUtil in
   let j2 = j |> drop_assoc |> List.assoc "results" |> drop_list |> List.hd
@@ -550,7 +550,7 @@ let questions_by_event_uid eventuid =
              RETURN { qtext: q.text, quid: q.uid, interprets: ii } AS qwe"
   in
   let params = [ "uid", `Int eventuid ] in
-  Lwt.return @@ Yojson.to_string @@ `List (API.commit ~verbose:true ~params cmd)
+  Lwt.return @@ Yojson.to_string @@ `List (API.commit ~params cmd)
 
 let interpret_info iuid =
   let cmd = "MATCH (i:INTERPRET{uid: {uid}}), i-[:CONFORMS]->e RETURN e" in
@@ -574,7 +574,7 @@ let remove_question quid =
               "
   in
   let params = [ ("quid", `Int quid) ] in
-  let _ = API.wrap_cypher ~verbose:true cmd ~params ~f:(function
+  let _ = API.wrap_cypher cmd ~params ~f:(function
       | `List [`List [`Int uid]] -> OK uid
       | _  -> Error "Wrong cypher format while creating a question"
     )
