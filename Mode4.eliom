@@ -52,11 +52,12 @@ open Printf
 open Firebug
 
 module Selectors = struct
-  let new_interpret_dialog = "new_interpret_dialog"
-  let new_question_dialog  = "new_question_dialog"
-  let confirmed_by_caption = "mode4_confirmed_by_caption"
-  let conflicts_with_caption = "mode4_conflicts_with_caption"
-  let confirmed_by_container = "mode4_confirmed_by_container"
+  let edit_connections_dialog = "edit_connections_dialog"
+  let new_interpret_dialog    = "new_interpret_dialog"
+  let new_question_dialog     = "new_question_dialog"
+  let confirmed_by_caption    = "mode4_confirmed_by_caption"
+  let conflicts_with_caption  = "mode4_conflicts_with_caption"
+  let confirmed_by_container  = "mode4_confirmed_by_container"
   let conflicts_with_container = "mode4_conflicts_with_container"
   let confirmed_by_item        = "mode4_confirmed_by_item"
   let conflicts_with_item      = "mode4_conflicts_with_item"
@@ -189,8 +190,8 @@ and draw_questions (qs: Jstypes.dbquestion_js Js.t Js.js_array Js.t) =
   JQ.tooltip need_tooltip;
   ()
 
-let edit_conflict_button_clicked _ = ()
-let edit_confirms_button_clicked _ = ()
+let edit_conflict_button_clicked _ = Dialogs.show Selectors.edit_connections_dialog
+let edit_confirms_button_clicked _ = Dialogs.show Selectors.edit_connections_dialog
 
 let draw_event (ev: Jstypes.dbevent_js Js.t) =
   let open Eliom_content.Html5.D in
@@ -243,7 +244,42 @@ let draw_event (ev: Jstypes.dbevent_js Js.t) =
   Lochash.set_value "uid" (string_of_int ev##uid);
   ()
 
+let init_edit_connections_dialog () =
+  let selector = Selectors.edit_connections_dialog in
+  if not(Dialogs.has_dialog selector) then
+  let input_class = selector ^ "-input" in
+  let open Eliom_content.Html5.D in
+  let left_div =
+    div [ pcdata "Data will be there"
+        ; br()
+        ; raw_input ~a:[a_class [input_class]] ~input_type:`Text ~value:"" ()
+        ]
+  in
+  let right_div = div [] in
+  let onOK () =
+    ()
+  (*
+    let jinput = Ojquery.(jQelt @@ js_jQ ("."^input_class) ) in
+    let text = JQ.val_ jinput in
+    JQ.set_val jinput "";
+    Dialogs.close selector;
+    clear_questions_block ();
+    begin
+      let event_uid = options.event##uid in
+      lwt res = %add_question_rpc (event_uid, text) in
+      lwt s2 = %get_questions_by_euid_rpc event_uid in
+      draw_questions (Json.unsafe_input @@ Js.string s2);
+      Lwt.return ()
+    end |> Lwt.ignore_result; *)
+  in
+  let onClose () = Dialogs.close selector in
+  let buttons = [ ("Close", onClose) ] in
+  Dialogs.register ~buttons ~selector ~width:800 ~height:400
+                   ~title:"Edit connections" ~content:[left_div; right_div];
+  ()
+
 let init_dialogs () =
+  init_edit_connections_dialog();
   let () =
     let selector = Selectors.new_question_dialog in
     if not(Dialogs.has_dialog selector) then

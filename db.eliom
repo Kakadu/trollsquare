@@ -18,6 +18,7 @@ module Shortcuts = struct
   let iter f = StringMap.iter f !shortcut_map
 
   let mh17crash = "mh17crash"
+  let mh17_german_report = "mh17_german_report"
   let mh17_nsto_machinegun = "mh17_nsto_machinegun"
   let mh17_morf_breifing = "mh17_morf_breifing"
   let stepasyuk1 = "stepasyuk1"
@@ -479,6 +480,11 @@ let events =
          ~url:""
          ~shortcut:Shortcuts.pskov_paratroopers_call_to_wife
          "The wife of paratrooper says that he is at home and not dead."
+
+  ; make ~ts:(ts 2014 09 19 18 31 00)
+         ~url:"http://shrek1.livejournal.com/933797.html"
+         ~shortcut:Shortcuts.mh17_german_report
+         "German report says that MH17 was destroyed by SA3"
 
   ]
 
