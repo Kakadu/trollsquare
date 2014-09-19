@@ -60,6 +60,8 @@ module Selectors = struct
   let conflicts_with_container = "mode4_conflicts_with_container"
   let confirmed_by_item        = "mode4_confirmed_by_item"
   let conflicts_with_item      = "mode4_conflicts_with_item"
+  let edit_conflicts_btn = "edit_conflicts_btn"
+  let edit_conforms_btn = "edit_conforms_btn"
 end
 
 (* TODO: maybe get event id from url *)
@@ -187,6 +189,9 @@ and draw_questions (qs: Jstypes.dbquestion_js Js.t Js.js_array Js.t) =
   JQ.tooltip need_tooltip;
   ()
 
+let edit_conflict_button_clicked _ = ()
+let edit_confirms_button_clicked _ = ()
+
 let draw_event (ev: Jstypes.dbevent_js Js.t) =
   let open Eliom_content.Html5.D in
   let ts = ODates.(From.seconds ev##timestamp |> To.string Printer.default) in
@@ -194,16 +199,31 @@ let draw_event (ev: Jstypes.dbevent_js Js.t) =
   Lwt.ignore_result @@ Lwt_js_events.clicks (To_dom.of_div title_div) (fun _ _ -> event_clicked ev);
 
   let d =
+    let edit_conflicts_btn = div ~a:[ a_class ["mode4_" ^ Selectors.edit_conflicts_btn; "need_tooltip"]
+                                    ; a_onclick (edit_conflict_button_clicked)
+                                    ; a_title "Edit conflicts"
+                                    ]
+                                 [dummy_img ()]
+    in
+    let edit_confirms_btn  = div ~a:[ a_class ["mode4_" ^ Selectors.edit_conflicts_btn; "need_tooltip"]
+                                    ; a_onclick (edit_confirms_button_clicked)
+                                    ; a_title "Edit confirmations"
+                                    ]
+                                 [dummy_img ()]
+    in
+
     div [ title_div
         ; div ~a:[a_class ["mode4-timestamp"]] [ pcdata ts ]
         ; div ~a:[a_class ["mode4-body"]] []
         ; div ~a:[a_class ["mode4-links"]]
               [ div ~a:[a_class ["mode4-confirmed-by"]]
                     [ div ~a:[a_class [Selectors.confirmed_by_caption]] [pcdata "Confirmed by"]
+                    ; edit_confirms_btn
                     ; div ~a:[a_class [Selectors.confirmed_by_container]] []
                     ]
               ; div ~a:[a_class ["mode4-conflicts-with"]]
                     [ div ~a:[a_class [Selectors.conflicts_with_caption]] [pcdata "Conflicts with"]
+                    ; edit_conflicts_btn
                     ; div ~a:[a_class [Selectors.conflicts_with_container]] []
                     ]
               ]
