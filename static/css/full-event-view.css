@@ -130,3 +130,15 @@
   width: 20px; height: 20px;
 }
 
+
+.edit_connections_dialog--search, .edit_connections_dialog--edit {
+  width: 50%;
+  display: inline-block;
+}
+
+.edit_connections_dialog--edit--container, .edit_connections_dialog--search--container {
+  position: absolute;
+  top: 2.5em; bottom: 0px;
+  width: 45%;
+  border: 1px solid;
+}
