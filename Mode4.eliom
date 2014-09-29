@@ -52,7 +52,6 @@ open Printf
 open Firebug
 
 module Selectors = struct
-  let edit_connections_dialog = "edit_connections_dialog"
   let new_interpret_dialog    = "new_interpret_dialog"
   let new_question_dialog     = "new_question_dialog"
   let confirmed_by_caption    = "mode4_confirmed_by_caption"
@@ -63,6 +62,14 @@ module Selectors = struct
   let conflicts_with_item      = "mode4_conflicts_with_item"
   let edit_conflicts_btn = "edit_conflicts_btn"
   let edit_conforms_btn = "edit_conforms_btn"
+  module ConnDialog = struct
+    let sel = "edit_connections_dialog"
+    let search = sel^"--search"
+    let search_container = search ^ "--container"
+    let edit = sel ^ "--edit"
+    let edit_container = edit ^ "--container"
+  end
+  let edit_connections_dialog = ConnDialog.sel
 end
 
 (* TODO: maybe get event id from url *)
@@ -245,14 +252,21 @@ let draw_event (ev: Jstypes.dbevent_js Js.t) =
   ()
 
 let init_edit_connections_dialog () =
-  let selector = Selectors.edit_connections_dialog in
+  let selector = Selectors.ConnDialog.sel in
   if not(Dialogs.has_dialog selector) then
   let input_class = selector ^ "-input" in
   let open Eliom_content.Html5.D in
   let left_div =
-    div [ pcdata "Data will be there"
-        ; br()
-        ; raw_input ~a:[a_class [input_class]] ~input_type:`Text ~value:"" ()
+    div [ div ~a:[a_class [Selectors.ConnDialog.search]]
+              [ pcdata "Search there"
+              (*; br() *)
+              ; raw_input ~a:[a_class [input_class]] ~input_type:`Text ~value:"" ()
+              ; div ~a:[a_class [Selectors.ConnDialog.edit_container]] []
+              ]
+        ; div ~a:[a_class [Selectors.ConnDialog.edit]]
+              [ pcdata "current connections"
+              ; div ~a:[a_class [Selectors.ConnDialog.edit_container]] []
+              ]
         ]
   in
   let right_div = div [] in
