@@ -74,6 +74,38 @@ let string_of_cypher_msg (x:cypher_msg) = x
 
 type transaction = int
 
+let make_index ?(verbose=false) ~config name =
+  (* creates index for nodes http://jexp.de/blog/2014/03/full-text-indexing-fts-in-neo4j-2-0/  *)
+  let url = sprintf "http://%s:%d/db/data/index/node" Cfg.server Cfg.port in
+  let config' = [ "type", `String "fulltext"; "provider", `String "lucene" ] in
+  let args = `Assoc [ "name", `String name; "config", `Assoc (config @ config') ] in
+  let pipeline = new Http_client.pipeline in
+
+  let data = Yojson.to_string args in
+  if verbose then (print_endline url; print_endline data);
+  let req = new Http_client.post_raw url data in
+  req#set_req_header "Accept"       "application/json; charset=UTF8";
+  req#set_req_header "Content-type" "application/json";
+  pipeline#add_with_callback req @@
+    (fun call -> match call#response_status with
+                 | `Ok -> ()
+                 | `Bad_request ->
+                    print_endline call#response_body#value;
+                    let j = to_json call#response_body#value in
+                    j |> YoUtil.drop_assoc |> List.assoc "message"
+                      |> YoUtil.drop_string |> print_endline;
+                 | _ ->
+                    print_endline call#response_status_text;
+                    print_endline call#response_body#value;
+                    (*print_endline "callback";*)
+                    ()
+    );
+  pipeline#run ();
+  let (ans: string) = req#get_resp_body () in
+  if verbose then print_endline ans;
+  ()
+
+
 let make_n_commit ?(verbose=false) cmd ~params =
   let url = sprintf "http://%s:%d/db/data/transaction/commit" Cfg.server Cfg.port in
   let args = `Assoc
@@ -131,7 +163,6 @@ let commit ?(verbose=true) cmd ~params =
 let post_cypher ?(verbose=false) ?(params=[]) cypher =
   let url = sprintf "http://%s:%d/db/data/cypher" Cfg.server Cfg.port in
   let pipeline = new Http_client.pipeline in
-  let opt = pipeline # get_options in
   let args = `Assoc [ ("query",  `String cypher);
                       ("params", `Assoc params) ] in
   if verbose then (
@@ -149,106 +180,25 @@ let post_cypher ?(verbose=false) ?(params=[]) cypher =
                     j |> YoUtil.drop_assoc |> List.assoc "message"
                       |> YoUtil.drop_string |> print_endline;
                  | _ ->
+                    print_endline "Some error while sending cypher";
                     print_endline call#response_status_text;
-                    print_endline call#response_body#value;
-                    print_endline "callback"
+                    print_endline call#response_body#value
 
     );
   pipeline#run ();
   req#get_resp_body ()
 
-let wrap_cypher ?(verbose=true) cmd ~params ~f =
+let wrap_cypher ?(verbose=false) cmd ~params ~f =
   let (ans: string) = post_cypher ~verbose ~params cmd in
   if verbose then print_endline ans;
   ans |> to_json |> YoUtil.drop_assoc |> List.assoc "data" |> f
 
 
-let remove_all () : (_,_) Result.t =
-  wrap_cypher ~verbose:false ~params:[] ~f:(fun _ -> () )
+let remove_all ?(verbose=false) () : (_,_) Result.t =
+  wrap_cypher ~verbose ~params:[] ~f:(fun _ -> () )
      "START r=rel(*)  DELETE r;";
-  wrap_cypher ~verbose:false ~params:[] ~f:(fun _ -> () )
+  wrap_cypher ~verbose ~params:[] ~f:(fun _ -> () )
      "START n=node(*) DELETE n;";
   OK ()
-
-let insert_node_between id1  =
-  let cmd = sprintf
-	"START n=node(%d)
-         MATCH n-[r:FOLLOWED_BY]->m
-         DELETE r
-	 CREATE UNIQUE n-[r1:FOLLOWED_BY]->(k{title:'qwe'})-[r2:FOLLOWED_BY]->m
-	 set k: TIMELINE_ITEM
-	" id1
-  in
-  print_endline (Str.global_replace (Str.regexp "\n") cmd " ");
-  post_cypher cmd
-
-
-class node_of_json (j: (string * Yojson.json) list) = object
-  method id : int =
-    match List.assoc "self" j with
-    | `String s -> int_of_string @@ String.rsplit s ~by:'/'
-    | _ -> failwith "Wrong json"
-  method json = j
-  method data = List.assoc "data" j
-  method prop name = List.assoc name j
-end
-
-class date_of_json (j: (string * Yojson.json) list) = object
-  method id : int =
-    match List.assoc "self" j with
-    | `String s -> int_of_string @@ String.rsplit s ~by:'/'
-    | _ -> failwith "Wrong json"
-  method json = j
-  method data = List.assoc "data" j
-  method when_ = match List.assoc "data" j with
-    | `Assoc xs -> List.assoc "when" xs |> (function `String s -> s | _ -> assert false)
-    | _ -> assert false
-end
-
-class question_of_json (j: (string * Yojson.json) list) = object(self)
-  method id : int =
-    match List.assoc "self" j with
-    | `String s -> int_of_string @@ String.rsplit s ~by:'/'
-    | _ -> failwith "Wrong json"
-  method json = j
-  method data = List.assoc "data" j
-  method prop name = match List.assoc "data" j with
-    | `Assoc xs -> List.assoc name xs |> (function `String s -> s | _ -> assert false)
-    | _ -> assert false
-  method text = self#prop "text"
-end
-(*
-let get_start_day () =
-  ukr_start_node () >>= fun start_node_id ->
-  let cmd = sprintf
-              "START x=node(%d) MATCH d<-[:WHEN]-x RETURN d;"
-              start_node_id
-  in
-  let ans = post_cypher (*~params:["first_id", `Int start_node_id]*) cmd in
-  (*print_endline ans;*)
-  match to_json ans with
-  | `Assoc [_; ("data",`List [`List [`Assoc xs]])] -> OK (new date_of_json xs)
-  |  _ -> Error "JSON match failure"
- *)
-let get_questions nodeid =
-  let cmd = sprintf "START x=node(%d)
-                     MATCH x-[:HAS_QUESTION]->y RETURN y" nodeid in
-  let j = to_json @@ post_cypher cmd |> YoUtil.drop_assoc |> List.assoc "data" in
-  print_endline @@ Yojson.to_string j;
-  match j with
-  | `List[`List ys ] -> OK (List.map (fun y -> new question_of_json (YoUtil.drop_assoc y)) ys)
-  | _ -> Error "JSON match failure"
-
-let get_next_timeline_node nodeid =
-  let cmd = sprintf "START x=node(%d)
-                     MATCH x-[:FOLLOWED_BY]->y RETURN y" nodeid in
-  match to_json @@ post_cypher cmd |> YoUtil.drop_assoc |> List.assoc "data" with
-  | `List[`List[`Assoc xs]] -> OK (new node_of_json xs)
-  | _ -> Error "JSON match failure"
-
-let id_from_node_json ej =
-  match List.Assoc.assoc_exn ~set:ej "self" with
-  | `String s -> Int64.of_string @@ String.rsplit s ~by:'/'
-  | _ -> failwith "Wrong json for function id_from_node_json"
 
 end

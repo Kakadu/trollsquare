@@ -44,6 +44,7 @@ let make_nodes ?(verbose=false) events =
     | OK () -> ()
     | Error () -> fprintf stderr "Can't connect to database"; exit 1
   in
+  API.make_index ~config:[("to_lower_case", `String "true")] "node_auto_index";
 
   let has_date ts =
     let cmd = "OPTIONAL MATCH (d:DAY) WHERE d.timestamp={ts} RETURN id(d)" in
@@ -179,7 +180,7 @@ type raw_interp =
 
 type raw_question = string * raw_interp list
 
-let insert_question ~parent_uid text =
+let insert_question ?(verbose=false) ~parent_uid text =
   let params =
     [ "parent", `Int parent_uid
     ; "qtext",  `String text
@@ -193,7 +194,7 @@ let insert_question ~parent_uid text =
              CREATE e-[:HAS_QUESTION]->(q:QUESTION{text: {qtext}, uid: uid_})
              RETURN uid_"
   in
-  API.wrap_cypher ~verbose:true cmd ~params ~f:(function
+  API.wrap_cypher ~verbose cmd ~params ~f:(function
       | `List [`List [`Int uid]] -> OK uid
       | _  -> Error "Wrong cypher format while creating a question"
     )
