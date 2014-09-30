@@ -141,7 +141,7 @@ module JQ = struct
     let args = alloc_args 1 in
     set_arg args 0 (Inject.identity @@ Js.string text) ;
     let res = Ops.call_method obj "val" (build_args args) in
-    ()
+    ignore @@ extract_t res
 
   let attr obj (name: string) (newval: string) =
     let args = alloc_args 2 in
@@ -159,6 +159,7 @@ module JQ = struct
     let show s = show @@ jQelt (Js.string s)
     let hide s = hide @@ jQelt (Js.string s)
     let clear s = clear @@ jQelt (Js.string s)
+    let val_  s = val_ @@ jQelt (Js.string s)
   end
 
   class type jqui_dialog = object
@@ -215,5 +216,7 @@ let dummy_img ?a ?(alt="") () =
   in
   img ~a ~src:(Xml.uri_of_string "") ~alt ()
 
+let wrap_json_result str =
+  Array.to_list @@ Js.to_array @@ Json.unsafe_input @@ Js.string str
 
 }}

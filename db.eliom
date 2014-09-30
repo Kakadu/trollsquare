@@ -625,5 +625,13 @@ let add_interpret ~parent_uid text =
   | OK uid -> Lwt.return uid
   | Error s -> print_endline s; assert false
 
+let fulltext_search_in_titles query =
+  if String.length query < 3 then Lwt.return "[]" else
+  let cmd = "START es=node:node_auto_index({q})
+             WHERE (es:EVENT)
+             RETURN [e IN COLLECT(es) | {title: e.title, uid: e.uid, timestamp: e.timestamp }] AS events"
+  in
+  let params = [ "q", `String (sprintf "\"title:%s*\"" query) ] in
+  Lwt.return @@ Yojson.to_string @@ `List (API.commit ~params cmd)
 
 }}

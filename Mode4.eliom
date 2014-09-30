@@ -37,6 +37,10 @@ let remove_interpret_rpc
     : (int, unit) Eliom_pervasives.server_function
   = server_function Json.t<int> Db.remove_interpret
 
+let fulltext_search_in_titles_rpc
+    : (string, string) Eliom_pervasives.server_function
+  = server_function Json.t<string> Db.fulltext_search_in_titles
+
 }}
 
 {shared{
@@ -254,13 +258,25 @@ let draw_event (ev: Jstypes.dbevent_js Js.t) =
 let init_edit_connections_dialog () =
   let selector = Selectors.ConnDialog.sel in
   if not(Dialogs.has_dialog selector) then
-  let input_class = selector ^ "-input" in
   let open Eliom_content.Html5.D in
+  let input_clas = sprintf "%s--input" Selectors.ConnDialog.search in
+  let onsearchbox_changed _ev =
+    let text = JQ.Sel.val_ ("."^input_clas) in
+    print_endline text;
+    lwt resjson = %fulltext_search_in_titles_rpc text in
+    print_endline resjson;
+    let events: Jstypes.dbevent_js Js.t list = wrap_json_result resjson in
+    print_endline @@ sprintf "Elements gotten: %d" (List.length events);
+    Lwt.return ()
+  in
+  let search_div = raw_input
+    ~a:[ a_class [input_clas]; a_oninput (fun e -> Lwt.ignore_result @@ onsearchbox_changed e) ]
+    ~input_type:`Text ~value:"" ()
+  in
   let left_div =
-    div [ div ~a:[a_class [Selectors.ConnDialog.search]]
+    div [ div ~a:[ a_class [Selectors.ConnDialog.search] ]
               [ pcdata "Search there"
-              (*; br() *)
-              ; raw_input ~a:[a_class [input_class]] ~input_type:`Text ~value:"" ()
+              ; search_div
               ; div ~a:[a_class [Selectors.ConnDialog.edit_container]] []
               ]
         ; div ~a:[a_class [Selectors.ConnDialog.edit]]
@@ -288,7 +304,7 @@ let init_edit_connections_dialog () =
   in
   let onClose () = Dialogs.close selector in
   let buttons = [ ("Close", onClose) ] in
-  Dialogs.register ~buttons ~selector ~width:800 ~height:400
+  Dialogs.register ~buttons ~selector ~width:800 ~height:450
                    ~title:"Edit connections" ~content:[left_div; right_div];
   ()
 
